@@ -69,11 +69,103 @@ export const takActionSchema = z.discriminatedUnion("action", [
 export type TakAction = z.infer<typeof takActionSchema>;
 
 /**
- * Certains modèles (OpenAI en sortie structurée stricte) refusent qu'une union
- * soit à la racine du schéma demandé. On l'enveloppe donc dans un objet : seul
- * `takActionSchema` reste utilisé ailleurs dans le code.
+ * Schéma réellement demandé au modèle : un seul objet plat, tous les champs
+ * optionnels sauf "action". Certains modèles (OpenAI en sortie structurée
+ * stricte) refusent purement et simplement un "oneOf"/union, même imbriqué —
+ * `takActionSchema` reste le seul type utilisé ailleurs dans le code ;
+ * `toTakAction` fait la conversion juste après l'appel au modèle.
  */
-export const takResponseSchema = z.object({ resultat: takActionSchema });
+export const takModelSchema = z.object({
+  action: z.enum([
+    "ajouter_evenement",
+    "planifier_repas",
+    "ajouter_article",
+    "valider_rituel",
+    "chercher_recette",
+    "incompris",
+  ]),
+  titre: z.string().optional().describe("Titre, pour un événement ou un repas"),
+  date: z.string().optional().describe("Date au format AAAA-MM-JJ, pour un événement ou un repas"),
+  heureDebut: z.string().optional().describe("Heure de début HH:MM, pour un événement"),
+  heureFin: z.string().optional().describe("Heure de fin HH:MM, pour un événement"),
+  lieu: z.string().optional().describe("Lieu, pour un événement"),
+  categorie: z.enum(categoryValues).optional().describe("Catégorie, pour un événement"),
+  personnes: z.array(z.enum(memberIds)).optional().describe("Personnes concernées, pour un événement"),
+  repeteChaqueSemaine: z.boolean().optional(),
+  note: z.string().optional(),
+  moment: z.enum(["midi", "soir"]).optional().describe("Moment du repas"),
+  label: z.string().optional().describe("Nom de l'article, pour la liste de courses"),
+  quantite: z.string().optional(),
+  rayon: z.string().optional(),
+  ritualId: z.string().optional().describe("Identifiant exact du rituel, pour valider_rituel"),
+  plat: z.string().optional().describe("Nom du plat, pour chercher_recette"),
+  raison: z.string().optional().describe("Explication, pour incompris"),
+});
+
+export type TakModelOutput = z.infer<typeof takModelSchema>;
+
+/**
+ * Convertit la sortie plate du modèle vers l'action typée utilisée par le
+ * reste de l'application. Bascule sur "incompris" si un champ requis par
+ * l'action choisie manque, plutôt que de laisser passer une donnée à moitié
+ * remplie.
+ */
+export function toTakAction(raw: TakModelOutput): TakAction {
+  switch (raw.action) {
+    case "ajouter_evenement": {
+      if (!raw.titre || !raw.date || !raw.categorie || !raw.personnes?.length) {
+        return {
+          action: "incompris",
+          raison: "Il manque des informations pour cet événement (titre, date, personnes concernées ou catégorie).",
+        };
+      }
+      return {
+        action: "ajouter_evenement",
+        titre: raw.titre,
+        date: raw.date,
+        heureDebut: raw.heureDebut || undefined,
+        heureFin: raw.heureFin || undefined,
+        lieu: raw.lieu || undefined,
+        categorie: raw.categorie,
+        personnes: raw.personnes,
+        repeteChaqueSemaine: raw.repeteChaqueSemaine || undefined,
+        note: raw.note || undefined,
+      };
+    }
+    case "planifier_repas": {
+      if (!raw.titre || !raw.date || !raw.moment) {
+        return { action: "incompris", raison: "Il manque le nom du plat, le jour ou le moment du repas." };
+      }
+      return { action: "planifier_repas", titre: raw.titre, date: raw.date, moment: raw.moment };
+    }
+    case "ajouter_article": {
+      if (!raw.label) {
+        return { action: "incompris", raison: "Je n'ai pas compris quel article ajouter à la liste." };
+      }
+      return {
+        action: "ajouter_article",
+        label: raw.label,
+        quantite: raw.quantite || undefined,
+        rayon: raw.rayon || undefined,
+      };
+    }
+    case "valider_rituel": {
+      if (!raw.ritualId) {
+        return { action: "incompris", raison: "Je n'ai pas retrouvé de quel rituel il s'agit." };
+      }
+      return { action: "valider_rituel", ritualId: raw.ritualId };
+    }
+    case "chercher_recette": {
+      if (!raw.plat) {
+        return { action: "incompris", raison: "Je n'ai pas compris quel plat tu cherches." };
+      }
+      return { action: "chercher_recette", plat: raw.plat };
+    }
+    case "incompris":
+    default:
+      return { action: "incompris", raison: raw.raison || "Je n'ai pas compris cette demande." };
+  }
+}
 
 const MEMBER_NAME: Record<string, string> = Object.fromEntries(
   MEMBERS.map((member) => [member.id, member.firstName]),
@@ -148,5 +240,5 @@ qu'un rituel de Khloé vient d'être fait : choisis "valider_rituel". Si elle de
 ou comment préparer un plat : choisis "chercher_recette". Si la phrase ne correspond à aucune de
 ces actions, si elle demande de supprimer ou modifier quelque chose, ou si elle est trop ambiguë
 pour être sûr, choisis "incompris" et explique brièvement pourquoi dans "raison", en français,
-avec un ton amical.`;
+avec un ton amical. Ne remplis que les champs utiles à l'action choisie ; laisse les autres vides.`;
 }
