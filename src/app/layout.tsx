@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Nunito } from "next/font/google";
 import { AppShell } from "@/components/AppShell";
+import { SessionProvider } from "@/lib/supabase/session";
 import "./globals.css";
 
 const nunito = Nunito({
@@ -36,7 +37,9 @@ export default function RootLayout({
   return (
     <html lang="fr">
       <body className={`${nunito.variable} antialiased`}>
-        <AppShell>{children}</AppShell>
+        <SessionProvider>
+          <AppShell>{children}</AppShell>
+        </SessionProvider>
       </body>
     </html>
   );

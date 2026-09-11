@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { SignInScreen } from "./SignInScreen";
+import { useSession } from "@/lib/supabase/session";
 
 interface NavItem {
   href: string;
@@ -22,6 +24,9 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/reglages", label: "Réglages", emoji: "⚙️", secondary: true },
 ];
 
+/** Pages accessibles sans être connecté. */
+const PUBLIC_PATHS = ["/connexion/retour"];
+
 function isActive(pathname: string, href: string): boolean {
   if (href === "/") return pathname === "/";
   return pathname.startsWith(href);
@@ -29,6 +34,25 @@ function isActive(pathname: string, href: string): boolean {
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const { configured, loading, session } = useSession();
+
+  if (PUBLIC_PATHS.includes(pathname)) {
+    return <>{children}</>;
+  }
+
+  // La base est connectée : l'application est réservée aux membres du foyer.
+  if (configured) {
+    if (loading) {
+      return (
+        <main className="flex min-h-screen items-center justify-center p-6">
+          <p className="text-base font-bold text-ink-soft">Ouverture de LesTakam…</p>
+        </main>
+      );
+    }
+    if (!session) {
+      return <SignInScreen />;
+    }
+  }
 
   return (
     <div className="flex min-h-screen flex-col md:flex-row">
@@ -66,7 +90,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         })}
       </nav>
 
-      <main className="min-w-0 flex-1 pb-24 md:pb-0">{children}</main>
+      <div className="min-w-0 flex-1 pb-24 md:pb-0">
+        {!configured ? <LocalModeNotice /> : null}
+        <main>{children}</main>
+      </div>
 
       {/* Barre du bas : téléphones des parents */}
       <nav
@@ -93,5 +120,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         })}
       </nav>
     </div>
+  );
+}
+
+/** Rappelle que les données ne sont pas encore partagées entre les appareils. */
+function LocalModeNotice() {
+  return (
+    <p className="border-b border-line bg-sun-soft px-4 py-2 text-center text-xs font-bold text-ink-soft">
+      Mode local : les données restent sur cet appareil et ne sont pas encore partagées.
+    </p>
   );
 }

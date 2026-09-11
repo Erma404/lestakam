@@ -1,0 +1,152 @@
+"use client";
+
+import { useState } from "react";
+import { getSupabaseClient } from "@/lib/supabase/client";
+
+type Status = "saisie" | "envoi" | "envoye" | "erreur";
+
+/** Délai au-delà duquel on cesse d'attendre le serveur, en millisecondes. */
+const TIMEOUT_MS = 15_000;
+
+/**
+ * Le Wi-Fi de la maison peut être capricieux : plutôt que de laisser
+ * tourner indéfiniment, on abandonne au bout d'un délai raisonnable.
+ */
+async function withTimeout<T>(promise: Promise<T>): Promise<T | "delai-depasse"> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<"delai-depasse">((resolve) => {
+    timer = setTimeout(() => resolve("delai-depasse"), TIMEOUT_MS);
+  });
+
+  try {
+    return await Promise.race([promise, timeout]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/**
+ * Connexion par lien envoyé par e-mail : aucun mot de passe à créer,
+ * à retenir ni à saisir sur la tablette de la cuisine.
+ */
+export function SignInScreen() {
+  const [email, setEmail] = useState("");
+  const [status, setStatus] = useState<Status>("saisie");
+  const [message, setMessage] = useState<string | null>(null);
+
+  async function handleSubmit(formEvent: React.FormEvent) {
+    formEvent.preventDefault();
+
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      setStatus("erreur");
+      setMessage("La base de données n'est pas encore configurée.");
+      return;
+    }
+
+    setStatus("envoi");
+    setMessage(null);
+
+    const result = await withTimeout(
+      supabase.auth.signInWithOtp({
+        email: email.trim(),
+        options: {
+          emailRedirectTo: `${window.location.origin}/connexion/retour`,
+          shouldCreateUser: true,
+        },
+      }),
+    );
+
+    if (result === "delai-depasse") {
+      setStatus("erreur");
+      setMessage(
+        "Le serveur met trop de temps à répondre. Vérifiez la connexion internet, puis réessayez.",
+      );
+      return;
+    }
+
+    if (result.error) {
+      setStatus("erreur");
+      setMessage(
+        "L'envoi n'a pas fonctionné. Vérifiez l'adresse e-mail et réessayez dans un instant.",
+      );
+      return;
+    }
+
+    setStatus("envoye");
+  }
+
+  return (
+    <main className="flex min-h-screen items-center justify-center p-4">
+      <div className="w-full max-w-md rounded-card border border-line bg-white/80 p-6 shadow-[0_2px_12px_rgba(47,42,36,0.05)] sm:p-8">
+        <div className="mb-6 text-center">
+          <p className="text-4xl" aria-hidden>
+            🏠
+          </p>
+          <h1 className="mt-2 text-3xl font-extrabold tracking-tight text-ink">LesTakam</h1>
+          <p className="mt-1 text-sm font-semibold text-ink-soft">
+            Le tableau de bord de la famille
+          </p>
+        </div>
+
+        {status === "envoye" ? (
+          <div className="rounded-card bg-sage-soft px-5 py-6 text-center">
+            <p className="text-3xl" aria-hidden>
+              📬
+            </p>
+            <p className="mt-2 text-base font-extrabold text-ink">C&apos;est envoyé !</p>
+            <p className="mt-1 text-sm font-semibold text-ink-soft">
+              Ouvrez le message reçu à l&apos;adresse <strong>{email}</strong> et appuyez sur le
+              lien qu&apos;il contient. Vous serez connecté automatiquement.
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                setStatus("saisie");
+                setMessage(null);
+              }}
+              className="mt-4 min-h-11 rounded-pill bg-white px-5 text-sm font-extrabold text-ink-soft"
+            >
+              Utiliser une autre adresse
+            </button>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            <label className="flex flex-col gap-1.5">
+              <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-ink-faint">
+                Votre adresse e-mail
+              </span>
+              <input
+                type="email"
+                value={email}
+                onChange={(changeEvent) => setEmail(changeEvent.target.value)}
+                required
+                autoComplete="email"
+                placeholder="prenom@exemple.fr"
+                className="min-h-14 w-full rounded-3xl border border-line bg-white px-4 py-3 text-base font-semibold text-ink outline-none placeholder:text-ink-faint focus:border-sage focus:ring-2 focus:ring-sage-soft"
+              />
+            </label>
+
+            <p className="text-xs font-semibold text-ink-soft">
+              Nous vous enverrons un lien de connexion. Aucun mot de passe n&apos;est nécessaire.
+            </p>
+
+            {message ? (
+              <p role="alert" className="rounded-3xl bg-rose-soft px-4 py-3 text-sm font-bold text-ink">
+                {message}
+              </p>
+            ) : null}
+
+            <button
+              type="submit"
+              disabled={status === "envoi"}
+              className="min-h-14 rounded-pill bg-sage px-6 text-base font-extrabold text-white hover:brightness-95 disabled:opacity-60"
+            >
+              {status === "envoi" ? "Envoi en cours…" : "Recevoir mon lien de connexion"}
+            </button>
+          </form>
+        )}
+      </div>
+    </main>
+  );
+}

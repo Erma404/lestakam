@@ -25,10 +25,42 @@ Conçu pour deux usages :
 - **Rituels de Khloé** répartis en matin, après-midi et soir, avec validation par un
   parent avant que les étoiles comptent, et progression vers la prochaine récompense.
 
+- **Calendrier** : ajout, modification et suppression des événements, répétition
+  chaque semaine, filtre par personne. Ce qui est ajouté apparaît aussitôt sur le
+  tableau de bord.
+- **Connexion des parents** par lien envoyé par e-mail, sans mot de passe.
+
 ## Ce qui reste à construire
 
-Calendrier complet, assistant Tak (chat et voix), repas, listes de courses,
-page des récompenses, réglages, base de données partagée et connexion des comptes.
+Assistant Tak (chat et voix), repas, listes de courses, page des récompenses,
+réglages, et le branchement des données sur la base partagée.
+
+## Mise en service
+
+L'application fonctionne dans deux modes, sans manipulation particulière :
+
+- **Mode local** (par défaut, tant que la base n'est pas configurée) : tout
+  fonctionne, mais les données restent sur l'appareil et un bandeau le rappelle.
+- **Mode partagé** : dès que les deux variables d'environnement sont renseignées,
+  l'accès demande une connexion et les données sont partagées entre les appareils.
+
+Pour passer en mode partagé :
+
+1. Dans Supabase, ouvrir **SQL Editor** et exécuter `supabase/01-structure.sql`.
+   Ce fichier crée les tables et les règles de sécurité qui limitent l'accès aux
+   membres du foyer.
+2. Dans Supabase, **Project Settings > API**, relever « Project URL » et la clé
+   « anon public ». Les reporter dans Vercel, sous **Settings > Environment
+   Variables**, aux noms indiqués dans `.env.example`. La clé `service_role` ne
+   doit jamais être utilisée ici.
+3. Dans Supabase, **Authentication > URL Configuration**, ajouter l'adresse de
+   l'application suivie de `/connexion/retour` aux adresses de redirection
+   autorisées.
+4. Demander un lien de connexion depuis l'application, avec l'adresse e-mail de
+   chaque parent, afin de créer les deux comptes.
+5. Exécuter `supabase/02-donnees-de-depart.sql` après y avoir inscrit les deux
+   adresses e-mail. Ce script crée le foyer, les trois membres, les rituels de
+   Khloé et ses objectifs de récompense.
 
 ## Développement
 
