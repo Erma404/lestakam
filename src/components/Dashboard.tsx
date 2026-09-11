@@ -228,6 +228,14 @@ function DashboardHeader({ today, currentTime }: { today: string; currentTime: s
   );
 }
 
+/** Le sous-titre affiché sous chaque prénom, sur la carte « Qui regarde ? ». */
+function familyRoleLabel(member: { id: MemberId; role: "parent" | "enfant" }): string {
+  if (member.id === "stephane") return "Papa";
+  if (member.id === "ernestine") return "Maman";
+  if (member.id === "khloe") return "La star";
+  return member.role === "parent" ? "Parent" : "Enfant";
+}
+
 function FamilyStrip({
   selectedMember,
   onSelect,
@@ -263,9 +271,7 @@ function FamilyStrip({
             >
               <Avatar member={member} size="lg" selected={selected} />
               <span className="text-base font-extrabold text-ink">{member.firstName}</span>
-              <span className="text-xs font-semibold text-ink-faint">
-                {member.role === "parent" ? "Parent" : "5 ans"}
-              </span>
+              <span className="text-xs font-semibold text-ink-faint">{familyRoleLabel(member)}</span>
             </button>
           );
         })}
