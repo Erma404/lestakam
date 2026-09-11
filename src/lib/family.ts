@@ -9,7 +9,13 @@ import type {
   RewardGoal,
   ShoppingItem,
 } from "./types";
-import { addDays, todayKey } from "./dates";
+import { addDays, fromDateKey, todayKey } from "./dates";
+
+/** Le prochain samedi, aujourd'hui compris. */
+function nextSaturday(from: string): string {
+  const weekday = fromDateKey(from).getDay();
+  return addDays(from, (6 - weekday + 7) % 7);
+}
 
 export const MEMBERS: Member[] = [
   {
@@ -200,7 +206,7 @@ export function demoEvents(today = todayKey()): CalendarEvent[] {
     {
       id: "demo-natation",
       title: "Cours de natation",
-      date: addDays(today, 2),
+      date: nextSaturday(today),
       startTime: "10:00",
       endTime: "11:00",
       location: "Piscine municipale",

@@ -56,6 +56,14 @@ export function nextEventForMember(
     })[0];
 }
 
+/**
+ * Retrouve l'événement d'origine à partir d'une occurrence répétée.
+ * `expandEvents` numérote les répétitions sous la forme « identifiant@date ».
+ */
+export function baseEventId(id: string): string {
+  return id.split("@")[0];
+}
+
 /** Fenêtre glissante de 7 jours à partir d'une date. */
 export function sevenDayWindow(from: string): string[] {
   return Array.from({ length: 7 }, (_, index) => addDays(from, index));

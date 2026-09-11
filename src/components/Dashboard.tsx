@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Avatar } from "./Avatar";
 import { Card, CardTitle } from "./Card";
-import { MEMBERS, demoEvents, demoReminders, memberById } from "@/lib/family";
+import { MEMBERS, demoReminders, memberById } from "@/lib/family";
 import { eventsForDay, expandEvents, sevenDayWindow } from "@/lib/events";
 import { suggestOutfit } from "@/lib/outfit";
 import { describeWeather } from "@/lib/weather";
@@ -17,6 +17,7 @@ import {
   formatWeekdayShort,
   todayKey,
 } from "@/lib/dates";
+import { useEvents } from "@/lib/useEvents";
 import { useNow } from "@/lib/useNow";
 import { useWeather } from "@/lib/useWeather";
 import type { CalendarEvent, MemberId, WeatherForecast } from "@/lib/types";
@@ -36,8 +37,9 @@ export function Dashboard({ initialIso }: DashboardProps) {
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [selectedMember, setSelectedMember] = useState<MemberId | null>(null);
 
+  const { events: allEvents } = useEvents();
   const week = useMemo(() => sevenDayWindow(today), [today]);
-  const events = useMemo(() => expandEvents(demoEvents(today), week), [today, week]);
+  const events = useMemo(() => expandEvents(allEvents, week), [allEvents, week]);
   const reminders = useMemo(() => demoReminders(today), [today]);
 
   // Au passage de minuit, la sélection revient d'elle-même sur le jour courant.
