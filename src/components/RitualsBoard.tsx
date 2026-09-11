@@ -3,11 +3,14 @@
 import { useMemo } from "react";
 import { Avatar } from "./Avatar";
 import { Card, CardTitle } from "./Card";
-import { RITUALS, REWARD_GOALS, memberById } from "@/lib/family";
+import { RITUALS, memberById } from "@/lib/family";
 import { useStoredState } from "@/lib/localStore";
 import { currentMoment, formatLongDate, todayKey } from "@/lib/dates";
 import { useNow } from "@/lib/useNow";
-import type { MomentOfDay, RitualState } from "@/lib/types";
+import { useStars } from "@/lib/useStars";
+import { useRewardGoals } from "@/lib/useRewardGoals";
+import { nextGoal as pickNextGoal } from "@/lib/rewards";
+import type { MomentOfDay, Ritual, RitualState } from "@/lib/types";
 
 const MOMENTS: { id: MomentOfDay; label: string; emoji: string; tone: string }[] = [
   { id: "matin", label: "Matin", emoji: "🌅", tone: "bg-sun-soft" },
@@ -34,34 +37,40 @@ export function RitualsBoard({ initialIso, childMode = false }: RitualsBoardProp
 
   const [statuses, setStatuses] = useStoredState<StatusMap>(`rituels:${today}`, EMPTY_STATUSES);
   const khloe = memberById("khloe");
+  const { total: starsEarned, logStar, unlogStar } = useStars();
+  const { goals } = useRewardGoals();
 
   const rituals = useMemo(() => RITUALS.filter((ritual) => ritual.memberId === "khloe"), []);
 
-  const starsEarned = rituals
+  const starsToday = rituals
     .filter((ritual) => statuses[ritual.id] === "valide")
     .reduce((total, ritual) => total + ritual.stars, 0);
 
   const starsPossible = rituals.reduce((total, ritual) => total + ritual.stars, 0);
   const doneCount = rituals.filter((ritual) => statuses[ritual.id] !== undefined).length;
 
-  function toggleChecked(ritualId: string, needsApproval: boolean) {
-    setStatuses((current) => {
-      const next = { ...current };
-      const state = next[ritualId];
-      if (state === undefined) {
-        next[ritualId] = needsApproval ? "coche" : "valide";
-      } else {
-        delete next[ritualId];
-      }
-      return next;
-    });
+  function toggleChecked(ritual: Ritual) {
+    const state = statuses[ritual.id];
+    if (state === undefined) {
+      const nextState: RitualState = ritual.needsParentApproval ? "coche" : "valide";
+      setStatuses((current) => ({ ...current, [ritual.id]: nextState }));
+      if (nextState === "valide") logStar(ritual.id, today, ritual.stars);
+    } else {
+      setStatuses((current) => {
+        const next = { ...current };
+        delete next[ritual.id];
+        return next;
+      });
+      if (state === "valide") unlogStar(ritual.id, today);
+    }
   }
 
-  function approve(ritualId: string) {
-    setStatuses((current) => ({ ...current, [ritualId]: "valide" }));
+  function approve(ritual: Ritual) {
+    setStatuses((current) => ({ ...current, [ritual.id]: "valide" }));
+    logStar(ritual.id, today, ritual.stars);
   }
 
-  const nextGoal = REWARD_GOALS.find((goal) => goal.starsRequired > starsEarned) ?? REWARD_GOALS[0];
+  const nextGoal = pickNextGoal(goals) ?? goals[0];
 
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-5 p-4 sm:p-6 lg:p-8">
@@ -80,31 +89,37 @@ export function RitualsBoard({ initialIso, childMode = false }: RitualsBoardProp
         </div>
         <div className="rounded-card bg-sun-soft px-5 py-3 text-center">
           <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-ink-faint">
-            Étoiles gagnées
+            Étoiles du jour
           </p>
           <p className="text-3xl font-extrabold text-ink">
-            {starsEarned}
+            {starsToday}
             <span className="text-base font-bold text-ink-faint"> / {starsPossible}</span>
           </p>
         </div>
       </header>
 
-      <Card className="bg-white/70">
-        <CardTitle
-          eyebrow="Progression"
-          title={`Objectif : ${nextGoal.emoji} ${nextGoal.label}`}
-          action={
-            <span className="rounded-pill bg-cream-deep px-4 py-2 text-xs font-bold text-ink-soft">
-              {doneCount} / {rituals.length} rituels touchés
-            </span>
-          }
-        />
-        <ProgressBar value={starsEarned} max={nextGoal.starsRequired} />
-        <p className="mt-2 text-sm font-semibold text-ink-soft">
-          Encore {Math.max(nextGoal.starsRequired - starsEarned, 0)} étoiles pour débloquer cette
-          récompense.
-        </p>
-      </Card>
+      {nextGoal ? (
+        <Card className="bg-white/70">
+          <CardTitle
+            eyebrow="Progression"
+            title={`Objectif : ${nextGoal.emoji} ${nextGoal.label}`}
+            action={
+              <span className="rounded-pill bg-cream-deep px-4 py-2 text-xs font-bold text-ink-soft">
+                {doneCount} / {rituals.length} rituels touchés
+              </span>
+            }
+          />
+          <ProgressBar value={starsEarned} max={nextGoal.starsRequired} />
+          <p className="mt-2 text-sm font-semibold text-ink-soft">
+            Encore {Math.max(nextGoal.starsRequired - starsEarned, 0)} étoiles pour débloquer cette
+            récompense. Voir la page{" "}
+            <a href="/recompenses" className="underline">
+              Récompenses
+            </a>
+            .
+          </p>
+        </Card>
+      ) : null}
 
       {MOMENTS.map((moment) => {
         const list = rituals.filter((ritual) => ritual.moment === moment.id);
@@ -133,7 +148,7 @@ export function RitualsBoard({ initialIso, childMode = false }: RitualsBoardProp
                     >
                       <button
                         type="button"
-                        onClick={() => toggleChecked(ritual.id, ritual.needsParentApproval)}
+                        onClick={() => toggleChecked(ritual)}
                         aria-pressed={checked}
                         className="flex min-w-0 flex-1 items-center gap-3 text-left"
                       >
@@ -159,7 +174,7 @@ export function RitualsBoard({ initialIso, childMode = false }: RitualsBoardProp
                       {checked && !approved && !childMode ? (
                         <button
                           type="button"
-                          onClick={() => approve(ritual.id)}
+                          onClick={() => approve(ritual)}
                           className="inline-flex min-h-11 shrink-0 items-center rounded-pill bg-sage px-4 text-xs font-extrabold text-white"
                         >
                           Valider

@@ -1,18 +1,10 @@
-import { ComingSoon } from "@/components/ComingSoon";
+import { MealsView } from "@/components/MealsView";
 
 export const metadata = { title: "Repas · LesTakam" };
 
+/** Rendu à chaque ouverture, pour que la semaine de départ soit toujours la bonne. */
+export const dynamic = "force-dynamic";
+
 export default function MealsPage() {
-  return (
-    <ComingSoon
-      emoji="🍽️"
-      title="Repas"
-      description="Le menu de la semaine"
-      planned={[
-        "Planifier les repas du midi et du soir",
-        "Voir le repas du jour directement sur le tableau de bord",
-        "Envoyer les ingrédients vers la liste de courses",
-      ]}
-    />
-  );
+  return <MealsView initialIso={new Date().toISOString()} />;
 }
