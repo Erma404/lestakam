@@ -4,8 +4,10 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Avatar } from "./Avatar";
 import { Card, CardTitle } from "./Card";
-import { MEMBERS, demoReminders, memberById } from "@/lib/family";
-import { eventsForDay, expandEvents, sevenDayWindow } from "@/lib/events";
+import { EventForm } from "./EventForm";
+import { ReminderForm } from "./ReminderForm";
+import { MEMBERS, memberById } from "@/lib/family";
+import { baseEventId, eventsForDay, expandEvents, sevenDayWindow } from "@/lib/events";
 import { suggestOutfit } from "@/lib/outfit";
 import { describeWeather } from "@/lib/weather";
 import { CATEGORY_ACCENT, CATEGORY_LABEL, accentClasses } from "@/lib/accents";
@@ -17,10 +19,11 @@ import {
   formatWeekdayShort,
   todayKey,
 } from "@/lib/dates";
-import { useEvents } from "@/lib/useEvents";
+import { useEvents, type NewEvent } from "@/lib/useEvents";
 import { useNow } from "@/lib/useNow";
+import { useReminders, type NewReminder } from "@/lib/useReminders";
 import { useWeather } from "@/lib/useWeather";
-import type { CalendarEvent, MemberId, WeatherForecast } from "@/lib/types";
+import type { CalendarEvent, MemberId, Reminder, WeatherForecast } from "@/lib/types";
 
 interface DashboardProps {
   /** Heure calculée par le serveur, utilisée pour le tout premier affichage. */
@@ -36,11 +39,15 @@ export function Dashboard({ initialIso }: DashboardProps) {
 
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [selectedMember, setSelectedMember] = useState<MemberId | null>(null);
+  const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
+  const [creatingEventOn, setCreatingEventOn] = useState<string | null>(null);
+  const [editingReminder, setEditingReminder] = useState<Reminder | null>(null);
+  const [creatingReminder, setCreatingReminder] = useState(false);
 
-  const { events: allEvents } = useEvents();
+  const { events: allEvents, addEvent, updateEvent, deleteEvent } = useEvents();
+  const { reminders, addReminder, updateReminder, toggleDone, deleteReminder } = useReminders();
   const week = useMemo(() => sevenDayWindow(today), [today]);
   const events = useMemo(() => expandEvents(allEvents, week), [allEvents, week]);
-  const reminders = useMemo(() => demoReminders(today), [today]);
 
   // Au passage de minuit, la sélection revient d'elle-même sur le jour courant.
   const activeDate = selectedDate && week.includes(selectedDate) ? selectedDate : today;
@@ -48,6 +55,32 @@ export function Dashboard({ initialIso }: DashboardProps) {
   const dayEvents = eventsForDay(events, activeDate, selectedMember);
   const selectedWeather = forecast?.days.find((day) => day.date === activeDate);
   const focusedMember = selectedMember ? memberById(selectedMember) : undefined;
+
+  function handleSaveEvent(values: NewEvent) {
+    if (editingEvent) {
+      updateEvent(baseEventId(editingEvent.id), values);
+    } else {
+      addEvent(values);
+    }
+    setEditingEvent(null);
+    setCreatingEventOn(null);
+  }
+
+  function handleDeleteEvent() {
+    if (!editingEvent) return;
+    deleteEvent(baseEventId(editingEvent.id));
+    setEditingEvent(null);
+  }
+
+  function handleSaveReminder(values: NewReminder) {
+    if (editingReminder) {
+      updateReminder(editingReminder.id, values);
+    } else {
+      addReminder(values);
+    }
+    setEditingReminder(null);
+    setCreatingReminder(false);
+  }
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-5 p-4 sm:p-6 lg:p-8">
@@ -80,15 +113,55 @@ export function Dashboard({ initialIso }: DashboardProps) {
         events={dayEvents}
         focusedMemberName={focusedMember?.firstName}
         onClearFilter={() => setSelectedMember(null)}
+        onEditEvent={setEditingEvent}
+        onAddEvent={() => setCreatingEventOn(activeDate)}
       />
 
-      <RemindersSection reminders={reminders} today={today} />
+      <RemindersSection
+        reminders={reminders}
+        today={today}
+        onAdd={() => setCreatingReminder(true)}
+        onEdit={setEditingReminder}
+        onToggleDone={toggleDone}
+      />
 
       {forecast ? (
         <OutfitSection
           date={activeDate}
           today={today}
           day={selectedWeather ?? forecast.days[0]}
+        />
+      ) : null}
+
+      {editingEvent || creatingEventOn ? (
+        <EventForm
+          event={editingEvent ?? undefined}
+          defaultDate={editingEvent?.date ?? creatingEventOn ?? activeDate}
+          onSave={handleSaveEvent}
+          onDelete={editingEvent ? handleDeleteEvent : undefined}
+          onClose={() => {
+            setEditingEvent(null);
+            setCreatingEventOn(null);
+          }}
+        />
+      ) : null}
+
+      {editingReminder || creatingReminder ? (
+        <ReminderForm
+          reminder={editingReminder ?? undefined}
+          onSave={handleSaveReminder}
+          onDelete={
+            editingReminder
+              ? () => {
+                  deleteReminder(editingReminder.id);
+                  setEditingReminder(null);
+                }
+              : undefined
+          }
+          onClose={() => {
+            setEditingReminder(null);
+            setCreatingReminder(false);
+          }}
         />
       ) : null}
     </div>
@@ -319,12 +392,16 @@ function DaySection({
   events,
   focusedMemberName,
   onClearFilter,
+  onEditEvent,
+  onAddEvent,
 }: {
   date: string;
   today: string;
   events: CalendarEvent[];
   focusedMemberName?: string;
   onClearFilter: () => void;
+  onEditEvent: (event: CalendarEvent) => void;
+  onAddEvent: () => void;
 }) {
   return (
     <Card>
@@ -336,15 +413,24 @@ function DaySection({
             : "Le programme de la journée"
         }
         action={
-          focusedMemberName ? (
+          <div className="flex items-center gap-2">
+            {focusedMemberName ? (
+              <button
+                type="button"
+                onClick={onClearFilter}
+                className="inline-flex min-h-11 items-center rounded-pill bg-cream-deep px-4 text-xs font-bold text-ink-soft hover:bg-line"
+              >
+                Toute la famille
+              </button>
+            ) : null}
             <button
               type="button"
-              onClick={onClearFilter}
-              className="inline-flex min-h-11 items-center rounded-pill bg-cream-deep px-4 text-xs font-bold text-ink-soft hover:bg-line"
+              onClick={onAddEvent}
+              className="inline-flex min-h-11 items-center gap-1 rounded-pill bg-sage px-4 text-xs font-extrabold text-white hover:brightness-95"
             >
-              Toute la famille
+              <span aria-hidden>＋</span> Ajouter
             </button>
-          ) : null
+          </div>
         }
       />
 
@@ -355,7 +441,7 @@ function DaySection({
       ) : (
         <ul className="flex flex-col gap-2">
           {events.map((event) => (
-            <EventRow key={event.id} event={event} />
+            <EventRow key={event.id} event={event} onEdit={() => onEditEvent(event)} />
           ))}
         </ul>
       )}
@@ -363,33 +449,39 @@ function DaySection({
   );
 }
 
-function EventRow({ event }: { event: CalendarEvent }) {
+function EventRow({ event, onEdit }: { event: CalendarEvent; onEdit: () => void }) {
   const accent = accentClasses(CATEGORY_ACCENT[event.category]);
   const people = event.memberIds
     .map((id) => memberById(id))
     .filter((member): member is NonNullable<typeof member> => Boolean(member));
 
   return (
-    <li className={`flex items-center gap-3 rounded-3xl ${accent.soft} px-4 py-3`}>
-      <div className="w-16 shrink-0 text-center">
-        <p className="text-base font-extrabold text-ink">{event.startTime ?? "Journée"}</p>
-        {event.endTime ? (
-          <p className="text-[11px] font-semibold text-ink-faint">jusqu&apos;à {event.endTime}</p>
-        ) : null}
-      </div>
-      <div className="min-w-0 flex-1">
-        <p className="text-base font-extrabold break-words text-ink">{event.title}</p>
-        <p className="text-xs font-semibold break-words text-ink-soft">
-          {CATEGORY_LABEL[event.category]}
-          {event.location ? ` · ${event.location}` : ""}
-          {event.repeatsWeekly ? " · chaque semaine" : ""}
-        </p>
-      </div>
-      <div className="flex -space-x-2">
-        {people.map((member) => (
-          <Avatar key={member.id} member={member} size="sm" />
-        ))}
-      </div>
+    <li>
+      <button
+        type="button"
+        onClick={onEdit}
+        className={`flex w-full items-center gap-3 rounded-3xl ${accent.soft} px-4 py-3 text-left hover:brightness-97`}
+      >
+        <div className="w-16 shrink-0 text-center">
+          <p className="text-base font-extrabold text-ink">{event.startTime ?? "Journée"}</p>
+          {event.endTime ? (
+            <p className="text-[11px] font-semibold text-ink-faint">jusqu&apos;à {event.endTime}</p>
+          ) : null}
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-base font-extrabold break-words text-ink">{event.title}</p>
+          <p className="text-xs font-semibold break-words text-ink-soft">
+            {CATEGORY_LABEL[event.category]}
+            {event.location ? ` · ${event.location}` : ""}
+            {event.repeatsWeekly ? " · chaque semaine" : ""}
+          </p>
+        </div>
+        <div className="flex -space-x-2">
+          {people.map((member) => (
+            <Avatar key={member.id} member={member} size="sm" />
+          ))}
+        </div>
+      </button>
     </li>
   );
 }
@@ -397,13 +489,31 @@ function EventRow({ event }: { event: CalendarEvent }) {
 function RemindersSection({
   reminders,
   today,
+  onAdd,
+  onEdit,
+  onToggleDone,
 }: {
-  reminders: ReturnType<typeof demoReminders>;
+  reminders: Reminder[];
   today: string;
+  onAdd: () => void;
+  onEdit: (reminder: Reminder) => void;
+  onToggleDone: (id: string) => void;
 }) {
   return (
     <Card className="bg-sun-soft/60">
-      <CardTitle eyebrow="À ne pas oublier" title="Les actions clés de la semaine" />
+      <CardTitle
+        eyebrow="À ne pas oublier"
+        title="Les actions clés de la semaine"
+        action={
+          <button
+            type="button"
+            onClick={onAdd}
+            className="inline-flex min-h-11 items-center gap-1 rounded-pill bg-white px-4 text-xs font-extrabold text-ink-soft hover:bg-cream-deep"
+          >
+            <span aria-hidden>＋</span> Ajouter
+          </button>
+        }
+      />
       {reminders.length === 0 ? (
         <p className="text-sm font-semibold text-ink-soft">Rien d&apos;urgent cette semaine. 🎉</p>
       ) : (
@@ -417,11 +527,29 @@ function RemindersSection({
                 key={reminder.id}
                 className="flex items-center gap-3 rounded-3xl bg-white/80 px-4 py-3"
               >
-                <span className="text-2xl" aria-hidden>
-                  📌
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="text-base font-extrabold break-words text-ink">
+                <button
+                  type="button"
+                  onClick={() => onToggleDone(reminder.id)}
+                  aria-pressed={reminder.done}
+                  aria-label={reminder.done ? "Marquer non fait" : "Marquer fait"}
+                  className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 text-lg ${
+                    reminder.done
+                      ? "border-sage bg-sage text-white"
+                      : "border-line bg-white text-transparent"
+                  }`}
+                >
+                  ✓
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onEdit(reminder)}
+                  className="min-w-0 flex-1 text-left"
+                >
+                  <p
+                    className={`text-base font-extrabold break-words ${
+                      reminder.done ? "text-ink-faint line-through" : "text-ink"
+                    }`}
+                  >
                     {reminder.label}
                   </p>
                   {reminder.dueDate ? (
@@ -429,7 +557,7 @@ function RemindersSection({
                       {formatRelativeDay(reminder.dueDate, today)}
                     </p>
                   ) : null}
-                </div>
+                </button>
                 <div className="flex -space-x-2">
                   {people.map((member) => (
                     <Avatar key={member.id} member={member} size="sm" />

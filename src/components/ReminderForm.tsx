@@ -3,44 +3,25 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { Avatar } from "./Avatar";
 import { MEMBERS } from "@/lib/family";
-import { CATEGORY_LABEL, accentClasses } from "@/lib/accents";
-import type { CalendarEvent, EventCategory, MemberId } from "@/lib/types";
-import type { NewEvent } from "@/lib/useEvents";
+import { accentClasses } from "@/lib/accents";
+import type { MemberId, Reminder } from "@/lib/types";
+import type { NewReminder } from "@/lib/useReminders";
 
-const CATEGORIES = Object.keys(CATEGORY_LABEL) as EventCategory[];
-
-interface EventFormProps {
-  /** Événement à modifier ; absent pour une création. */
-  event?: CalendarEvent;
-  /** Date pré-remplie à la création. */
-  defaultDate: string;
-  /** Heure de début pré-remplie à la création, ex. quand on clique dans la grille. */
-  defaultStartTime?: string;
-  onSave: (values: NewEvent) => void;
+interface ReminderFormProps {
+  /** Rappel à modifier ; absent pour une création. */
+  reminder?: Reminder;
+  onSave: (values: NewReminder) => void;
   onDelete?: () => void;
   onClose: () => void;
 }
 
-export function EventForm({
-  event,
-  defaultDate,
-  defaultStartTime,
-  onSave,
-  onDelete,
-  onClose,
-}: EventFormProps) {
+export function ReminderForm({ reminder, onSave, onDelete, onClose }: ReminderFormProps) {
   const titleId = useId();
   const panelRef = useRef<HTMLDivElement>(null);
 
-  const [title, setTitle] = useState(event?.title ?? "");
-  const [date, setDate] = useState(event?.date ?? defaultDate);
-  const [startTime, setStartTime] = useState(event?.startTime ?? defaultStartTime ?? "");
-  const [endTime, setEndTime] = useState(event?.endTime ?? "");
-  const [location, setLocation] = useState(event?.location ?? "");
-  const [category, setCategory] = useState<EventCategory>(event?.category ?? "activite");
-  const [memberIds, setMemberIds] = useState<MemberId[]>(event?.memberIds ?? []);
-  const [repeatsWeekly, setRepeatsWeekly] = useState(event?.repeatsWeekly ?? false);
-  const [notes, setNotes] = useState(event?.notes ?? "");
+  const [label, setLabel] = useState(reminder?.label ?? "");
+  const [dueDate, setDueDate] = useState(reminder?.dueDate ?? "");
+  const [memberIds, setMemberIds] = useState<MemberId[]>(reminder?.memberIds ?? []);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -51,7 +32,6 @@ export function EventForm({
     document.addEventListener("keydown", onKeyDown);
     panelRef.current?.querySelector<HTMLInputElement>("input")?.focus();
 
-    // Empêche la page de défiler derrière le formulaire sur téléphone.
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
 
@@ -70,29 +50,15 @@ export function EventForm({
   function handleSubmit(formEvent: React.FormEvent) {
     formEvent.preventDefault();
 
-    if (!title.trim()) {
-      setError("Donnez un nom à cet événement.");
-      return;
-    }
-    if (memberIds.length === 0) {
-      setError("Indiquez au moins une personne concernée.");
-      return;
-    }
-    if (startTime && endTime && endTime < startTime) {
-      setError("L'heure de fin doit venir après l'heure de début.");
+    if (!label.trim()) {
+      setError("Donnez un nom à ce rappel.");
       return;
     }
 
     onSave({
-      title: title.trim(),
-      date,
-      startTime: startTime || undefined,
-      endTime: endTime || undefined,
-      location: location.trim() || undefined,
-      category,
+      label: label.trim(),
+      dueDate: dueDate || undefined,
       memberIds,
-      repeatsWeekly,
-      notes: notes.trim() || undefined,
     });
   }
 
@@ -109,11 +75,11 @@ export function EventForm({
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className="max-h-[92vh] w-full max-w-xl overflow-y-auto rounded-t-card bg-cream p-5 shadow-xl sm:rounded-card sm:p-6"
+        className="w-full max-w-md overflow-y-auto rounded-t-card bg-cream p-5 shadow-xl sm:rounded-card sm:p-6"
       >
         <header className="mb-5 flex items-center justify-between gap-3">
           <h2 id={titleId} className="text-2xl font-extrabold tracking-tight text-ink">
-            {event ? "Modifier l'événement" : "Nouvel événement"}
+            {reminder ? "Modifier le rappel" : "Nouveau rappel"}
           </h2>
           <button
             type="button"
@@ -129,44 +95,24 @@ export function EventForm({
           <Field label="Quoi ?">
             <input
               type="text"
-              value={title}
-              onChange={(changeEvent) => setTitle(changeEvent.target.value)}
-              placeholder="Cours de natation"
+              value={label}
+              onChange={(changeEvent) => setLabel(changeEvent.target.value)}
+              placeholder="Régler la cantine du mois"
               className={inputClass}
               required
             />
           </Field>
 
-          <Field label="Quel jour ?">
+          <Field label="Avant quand ? (optionnel)">
             <input
               type="date"
-              value={date}
-              onChange={(changeEvent) => setDate(changeEvent.target.value)}
+              value={dueDate}
+              onChange={(changeEvent) => setDueDate(changeEvent.target.value)}
               className={inputClass}
-              required
             />
           </Field>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="De (optionnel)">
-              <input
-                type="time"
-                value={startTime}
-                onChange={(changeEvent) => setStartTime(changeEvent.target.value)}
-                className={inputClass}
-              />
-            </Field>
-            <Field label="À (optionnel)">
-              <input
-                type="time"
-                value={endTime}
-                onChange={(changeEvent) => setEndTime(changeEvent.target.value)}
-                className={inputClass}
-              />
-            </Field>
-          </div>
-
-          <Group label="Qui est concerné ?">
+          <Group label="Qui s'en occupe ? (optionnel)">
             <div className="flex flex-wrap gap-2">
               {MEMBERS.map((member) => {
                 const selected = memberIds.includes(member.id);
@@ -190,61 +136,6 @@ export function EventForm({
               })}
             </div>
           </Group>
-
-          <Group label="Type">
-            <div className="flex flex-wrap gap-2">
-              {CATEGORIES.map((value) => (
-                <button
-                  key={value}
-                  type="button"
-                  onClick={() => setCategory(value)}
-                  aria-pressed={category === value}
-                  className={`min-h-11 rounded-pill border-2 px-4 text-sm font-bold ${
-                    category === value
-                      ? "border-ink-faint bg-white text-ink"
-                      : "border-line bg-white/60 text-ink-soft"
-                  }`}
-                >
-                  {CATEGORY_LABEL[value]}
-                </button>
-              ))}
-            </div>
-          </Group>
-
-          <Field label="Où ? (optionnel)">
-            <input
-              type="text"
-              value={location}
-              onChange={(changeEvent) => setLocation(changeEvent.target.value)}
-              placeholder="Piscine municipale"
-              className={inputClass}
-            />
-          </Field>
-
-          <label className="flex min-h-14 items-center gap-3 rounded-card border border-line bg-white px-4 py-3">
-            <input
-              type="checkbox"
-              checked={repeatsWeekly}
-              onChange={(changeEvent) => setRepeatsWeekly(changeEvent.target.checked)}
-              className="h-6 w-6 shrink-0 accent-[#7fa87f]"
-            />
-            <span className="text-sm font-bold text-ink">
-              Chaque semaine, le même jour
-              <span className="block text-xs font-semibold text-ink-faint">
-                Par exemple la natation tous les samedis.
-              </span>
-            </span>
-          </label>
-
-          <Field label="Note (optionnel)">
-            <textarea
-              value={notes}
-              onChange={(changeEvent) => setNotes(changeEvent.target.value)}
-              rows={2}
-              placeholder="Penser au bonnet de bain"
-              className={`${inputClass} resize-none`}
-            />
-          </Field>
 
           {error ? (
             <p role="alert" className="rounded-3xl bg-rose-soft px-4 py-3 text-sm font-bold text-ink">
@@ -273,7 +164,7 @@ export function EventForm({
               {confirmingDelete ? (
                 <div className="flex flex-wrap items-center gap-3">
                   <p className="flex-1 text-sm font-bold text-ink">
-                    Supprimer « {event?.title} » définitivement ?
+                    Supprimer « {reminder?.label} » définitivement ?
                   </p>
                   <button
                     type="button"
@@ -296,7 +187,7 @@ export function EventForm({
                   onClick={() => setConfirmingDelete(true)}
                   className="min-h-11 rounded-pill px-4 text-sm font-extrabold text-terracotta hover:bg-terracotta-soft"
                 >
-                  Supprimer cet événement
+                  Supprimer ce rappel
                 </button>
               )}
             </div>
@@ -321,7 +212,6 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-/** Même présentation qu'un champ, pour un groupe de boutons de choix. */
 function Group({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <fieldset className="flex flex-col gap-1.5">

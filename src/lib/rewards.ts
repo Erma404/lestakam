@@ -1,5 +1,5 @@
 import type { RewardGoal } from "./types";
-import { addDays, fromDateKey } from "./dates";
+import { startOfWeek } from "./dates";
 
 export interface StarEntry {
   id: string;
@@ -12,13 +12,6 @@ export interface StarEntry {
 /** Total d'étoiles jamais gagnées, toutes dates confondues. */
 export function totalStars(entries: StarEntry[]): number {
   return entries.reduce((total, entry) => total + entry.stars, 0);
-}
-
-/** Premier jour (lundi) de la semaine contenant cette date. */
-export function startOfWeek(date: string): string {
-  const weekday = fromDateKey(date).getDay(); // 0 = dimanche
-  const offsetFromMonday = (weekday + 6) % 7;
-  return addDays(date, -offsetFromMonday);
 }
 
 /** Premier jour du mois contenant cette date. */

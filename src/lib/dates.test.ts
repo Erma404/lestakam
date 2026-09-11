@@ -7,8 +7,10 @@ import {
   formatRelativeDay,
   formatWeekdayShort,
   nextSevenDays,
+  startOfWeek,
   toDateKey,
   todayKey,
+  weekDays,
 } from "./dates";
 
 describe("clés de date", () => {
@@ -50,6 +52,36 @@ describe("libellés en français", () => {
     expect(formatRelativeDay("2026-09-11", "2026-09-11")).toBe("Aujourd'hui");
     expect(formatRelativeDay("2026-09-12", "2026-09-11")).toBe("Demain");
     expect(formatRelativeDay("2026-09-14", "2026-09-11")).toBe("Lundi 14");
+  });
+});
+
+describe("startOfWeek", () => {
+  it("renvoie le lundi de la semaine, un vendredi", () => {
+    // Le 11 septembre 2026 est un vendredi.
+    expect(startOfWeek("2026-09-11")).toBe("2026-09-07");
+  });
+
+  it("renvoie la date elle-même un lundi", () => {
+    expect(startOfWeek("2026-09-07")).toBe("2026-09-07");
+  });
+
+  it("passe correctement d'un dimanche au lundi précédent", () => {
+    // Le 13 septembre 2026 est un dimanche.
+    expect(startOfWeek("2026-09-13")).toBe("2026-09-07");
+  });
+});
+
+describe("weekDays", () => {
+  it("renvoie les 7 jours de lundi à dimanche", () => {
+    expect(weekDays("2026-09-11")).toEqual([
+      "2026-09-07",
+      "2026-09-08",
+      "2026-09-09",
+      "2026-09-10",
+      "2026-09-11",
+      "2026-09-12",
+      "2026-09-13",
+    ]);
   });
 });
 

@@ -36,6 +36,19 @@ export function nextSevenDays(from: string): string[] {
   return Array.from({ length: 7 }, (_, index) => addDays(from, index));
 }
 
+/** Premier jour (lundi) de la semaine contenant cette date. */
+export function startOfWeek(date: string): string {
+  const weekday = fromDateKey(date).getDay(); // 0 = dimanche
+  const offsetFromMonday = (weekday + 6) % 7;
+  return addDays(date, -offsetFromMonday);
+}
+
+/** Les 7 jours de la semaine (lundi à dimanche) contenant cette date. */
+export function weekDays(date: string): string[] {
+  const start = startOfWeek(date);
+  return Array.from({ length: 7 }, (_, index) => addDays(start, index));
+}
+
 /** Ex. « jeudi 11 septembre ». */
 export function formatLongDate(key: string): string {
   return new Intl.DateTimeFormat("fr-FR", {

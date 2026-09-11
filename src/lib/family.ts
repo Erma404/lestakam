@@ -40,7 +40,7 @@ export const MEMBERS: Member[] = [
     role: "enfant",
     avatarEmoji: "👧🏾",
     accent: "sun",
-    warmthPreference: "normal",
+    warmthPreference: "frileux",
   },
 ];
 

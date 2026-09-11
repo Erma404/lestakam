@@ -21,11 +21,18 @@ export interface OutfitSuggestion {
   personalNote?: string;
 }
 
-/** Décale la température ressentie selon la préférence du membre. */
-function perceivedTemperature(maxTemp: number, member: Member): number {
-  if (member.warmthPreference === "frileux") return maxTemp - 3;
-  if (member.warmthPreference === "chaud") return maxTemp + 2;
-  return maxTemp;
+/**
+ * Température à habiller, décalée selon la préférence du membre.
+ *
+ * On s'habille pour le moment le plus frais de la sortie — le matin, le
+ * plus souvent — jamais pour la chaleur de l'après-midi : mieux vaut une
+ * couche à enlever qu'un enfant qui a froid en sortant.
+ */
+function perceivedTemperature(day: WeatherDay, member: Member): number {
+  const base = day.minTemp;
+  if (member.warmthPreference === "frileux") return base - 3;
+  if (member.warmthPreference === "chaud") return base + 2;
+  return base;
 }
 
 function personalNote(member: Member): string | undefined {
@@ -35,9 +42,11 @@ function personalNote(member: Member): string | undefined {
 }
 
 export function suggestOutfit(member: Member, day: WeatherDay): OutfitSuggestion {
-  const temperature = perceivedTemperature(day.maxTemp, member);
+  const temperature = perceivedTemperature(day, member);
   const wet = isWet(day.weatherCode) || day.rainChance >= 40;
-  const chillyMorning = day.minTemp <= 12 && day.maxTemp - day.minTemp >= 7;
+  // Écart marqué entre le matin et l'après-midi : la tenue du matin
+  // pourrait devenir trop chaude une fois le soleil monté.
+  const bigSwing = day.maxTemp - day.minTemp >= 7;
   const layers: OutfitLayer[] = [];
 
   if (temperature >= 26) {
@@ -54,9 +63,9 @@ export function suggestOutfit(member: Member, day: WeatherDay): OutfitSuggestion
     layers.push({ slot: "bas", emoji: "👖", label: "Pantalon" });
     layers.push({ slot: "pieds", emoji: "👟", label: "Baskets" });
   } else if (temperature >= 8) {
-    layers.push({ slot: "haut", emoji: "🧥", label: "Pull et veste" });
+    layers.push({ slot: "haut", emoji: "🧥", label: "Sweat et veste" });
     layers.push({ slot: "bas", emoji: "👖", label: "Pantalon chaud" });
-    layers.push({ slot: "pieds", emoji: "👟", label: "Chaussures fermées" });
+    layers.push({ slot: "pieds", emoji: "👟", label: "Baskets fermées" });
   } else {
     layers.push({ slot: "haut", emoji: "🧥", label: "Manteau chaud sur un pull" });
     layers.push({ slot: "bas", emoji: "👖", label: "Pantalon doublé" });
@@ -67,16 +76,20 @@ export function suggestOutfit(member: Member, day: WeatherDay): OutfitSuggestion
   if (wet) {
     layers.push({ slot: "accessoire", emoji: "☔", label: "Imperméable ou parapluie" });
   }
-  if (chillyMorning && temperature < 26) {
-    layers.push({ slot: "accessoire", emoji: "🧥", label: "Couche facile à enlever dans la journée" });
+  if (bigSwing && temperature < 26) {
+    layers.push({
+      slot: "accessoire",
+      emoji: "🧥",
+      label: "Couche facile à enlever une fois qu'il fera plus chaud",
+    });
   }
 
   let headline: string;
-  if (temperature >= 26) headline = "Journée chaude, on reste léger";
-  else if (temperature >= 20) headline = "Journée douce et agréable";
-  else if (temperature >= 14) headline = "Doux, mais une petite couche en plus";
-  else if (temperature >= 8) headline = "Journée fraîche, on se couvre";
-  else headline = "Il fait froid, on sort bien couvert";
+  if (temperature >= 26) headline = "Chaud dès le matin, on reste léger";
+  else if (temperature >= 20) headline = "Doux dès le matin";
+  else if (temperature >= 14) headline = "Frais le matin, une petite couche en plus";
+  else if (temperature >= 8) headline = "Fraîcheur le matin, on couvre bien";
+  else headline = "Froid le matin, on sort bien couvert";
 
   if (wet) headline += " · pensez à la pluie";
 
