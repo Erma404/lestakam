@@ -1,5 +1,10 @@
 import { generateObject, generateText, NoObjectGeneratedError } from "ai";
-import { buildTakSystemPrompt, describeTakAction, takActionSchema, youtubeSearchUrl } from "@/lib/tak";
+import {
+  buildTakSystemPrompt,
+  describeTakAction,
+  takResponseSchema,
+  youtubeSearchUrl,
+} from "@/lib/tak";
 
 export const runtime = "nodejs";
 
@@ -27,12 +32,13 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { object } = await generateObject({
+    const { object: response } = await generateObject({
       model: MODEL,
-      schema: takActionSchema,
+      schema: takResponseSchema,
       system: buildTakSystemPrompt(today, weekday),
       prompt: text.trim(),
     });
+    const object = response.resultat;
 
     if (object.action === "chercher_recette") {
       const { text: recette } = await generateText({

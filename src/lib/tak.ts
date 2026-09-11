@@ -68,6 +68,13 @@ export const takActionSchema = z.discriminatedUnion("action", [
 
 export type TakAction = z.infer<typeof takActionSchema>;
 
+/**
+ * Certains modèles (OpenAI en sortie structurée stricte) refusent qu'une union
+ * soit à la racine du schéma demandé. On l'enveloppe donc dans un objet : seul
+ * `takActionSchema` reste utilisé ailleurs dans le code.
+ */
+export const takResponseSchema = z.object({ resultat: takActionSchema });
+
 const MEMBER_NAME: Record<string, string> = Object.fromEntries(
   MEMBERS.map((member) => [member.id, member.firstName]),
 );
