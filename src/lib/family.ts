@@ -178,6 +178,13 @@ export const REWARD_GOALS: RewardGoal[] = [
     starsRequired: 20,
   },
   {
+    id: "goal-restaurant",
+    memberId: "khloe",
+    label: "Repas au restaurant",
+    emoji: "🍽️",
+    starsRequired: 20,
+  },
+  {
     id: "goal-cinema",
     memberId: "khloe",
     label: "Séance de cinéma",
