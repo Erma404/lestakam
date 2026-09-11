@@ -1,9 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { Card } from "./Card";
 import { MealForm } from "./MealForm";
-import { RecipeSearch } from "./RecipeSearch";
 import { MEAL_MOMENT_LABEL, MEAL_MOMENTS, mealFor, mealsForDay } from "@/lib/meals";
 import { useMeals, type NewMeal } from "@/lib/useMeals";
 import { useShoppingList } from "@/lib/useShoppingList";
@@ -65,13 +65,21 @@ export function MealsView({ initialIso }: MealsViewProps) {
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-5 p-4 pb-28 sm:p-6 md:pb-6 lg:p-8">
-      <header>
-        <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-ink-faint">
-          Les 7 prochains jours
-        </p>
-        <h1 className="font-display text-3xl font-bold text-ink sm:text-4xl">
-          🍽️ Repas
-        </h1>
+      <header className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-ink-faint">
+            Les 7 prochains jours
+          </p>
+          <h1 className="font-display text-3xl font-bold text-ink sm:text-4xl">
+            🍽️ Repas
+          </h1>
+        </div>
+        <Link
+          href="/recettes"
+          className="inline-flex min-h-11 items-center gap-1 rounded-pill bg-cream-deep px-4 text-xs font-bold text-ink-soft hover:bg-line"
+        >
+          📖 Chercher une recette
+        </Link>
       </header>
 
       {confirmation ? (
@@ -79,8 +87,6 @@ export function MealsView({ initialIso }: MealsViewProps) {
           {confirmation}
         </p>
       ) : null}
-
-      <RecipeSearch />
 
       {week.map((date) => {
         const dayMeals = mealsForDay(meals, date);

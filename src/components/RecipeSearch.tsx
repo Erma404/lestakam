@@ -69,7 +69,6 @@ export function RecipeSearch() {
 
   return (
     <section className="rounded-card bg-lilac-soft/70 p-5 shadow-[0_3px_0_var(--color-line)] sm:p-6">
-      <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-ink-faint">Recettes</p>
       <h2 className="mb-3 font-display text-xl font-bold text-ink sm:text-2xl">
         🔎 Chercher une recette
       </h2>

@@ -20,6 +20,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/rituels", label: "Rituels", emoji: "✅" },
   { href: "/recompenses", label: "Récompenses", emoji: "⭐" },
   { href: "/repas", label: "Repas", emoji: "🍽️", secondary: true },
+  { href: "/recettes", label: "Recettes", emoji: "📖", secondary: true },
   { href: "/listes", label: "Listes", emoji: "🛒", secondary: true },
   { href: "/reglages", label: "Réglages", emoji: "⚙️", secondary: true },
 ];
