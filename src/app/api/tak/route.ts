@@ -3,7 +3,9 @@ import { buildTakSystemPrompt, describeTakAction, takActionSchema, youtubeSearch
 
 export const runtime = "nodejs";
 
-const MODEL = "anthropic/claude-haiku-4.5";
+// Modèle accessible au palier gratuit d'AI Gateway (les modèles Anthropic ne le
+// sont pas). Rapide et largement suffisant pour reconnaître une commande courte.
+const MODEL = "openai/gpt-5.4-nano";
 
 export async function POST(request: Request) {
   let body: unknown;
