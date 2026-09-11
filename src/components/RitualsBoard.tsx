@@ -1,11 +1,11 @@
 "use client";
 
-import { useMemo } from "react";
+import { memberById } from "@/lib/family";
 import { Avatar } from "./Avatar";
 import { Card, CardTitle } from "./Card";
-import { RITUALS, memberById } from "@/lib/family";
 import { currentMoment, formatLongDate, todayKey } from "@/lib/dates";
 import { useNow } from "@/lib/useNow";
+import { useRituals } from "@/lib/useRituals";
 import { useRitualStatus } from "@/lib/useRitualStatus";
 import { useRewardGoals } from "@/lib/useRewardGoals";
 import { nextGoal as pickNextGoal } from "@/lib/rewards";
@@ -31,10 +31,9 @@ export function RitualsBoard({ initialIso, childMode = false }: RitualsBoardProp
   const currentSlot = currentMoment(now);
 
   const khloe = memberById("khloe");
+  const { rituals } = useRituals();
   const { statuses, starsEarned, toggle: toggleChecked, approve } = useRitualStatus(today);
   const { goals } = useRewardGoals();
-
-  const rituals = useMemo(() => RITUALS.filter((ritual) => ritual.memberId === "khloe"), []);
 
   const starsToday = rituals
     .filter((ritual) => statuses[ritual.id] === "valide")

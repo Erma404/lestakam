@@ -37,8 +37,13 @@ export function SettingsView() {
     { id: "calendrier", label: "Calendrier", run: events.resetToDemo },
     { id: "repas", label: "Repas", run: meals.resetToDemo },
     { id: "courses", label: "Liste de courses", run: shopping.resetToDemo },
-    { id: "objectifs", label: "Objectifs de récompense", run: rewardGoals.resetToDemo },
-    { id: "etoiles", label: "Compteur d'étoiles", run: stars.resetToDemo },
+    // Une fois partagés (base connectée), les objectifs et le compteur
+    // d'étoiles de Khloé ne se remettent plus à zéro depuis ce bouton :
+    // ce serait effacer sa progression pour tout le foyer d'un coup.
+    ...(rewardGoals.shared
+      ? []
+      : [{ id: "objectifs", label: "Objectifs de récompense", run: rewardGoals.resetToDemo }]),
+    ...(stars.shared ? [] : [{ id: "etoiles", label: "Compteur d'étoiles", run: stars.resetToDemo }]),
   ];
 
   return (

@@ -1,9 +1,12 @@
 "use client";
 
-import { useCallback, useMemo } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useStoredState } from "./localStore";
+import { useHouseholdShared } from "./supabase/household";
+import { getSupabaseClient } from "./supabase/client";
 import { REWARD_GOALS } from "./family";
 import type { RewardGoal } from "./types";
+import type { RewardGoalRow } from "./supabase/database.types";
 
 const STORAGE_KEY = "objectifs";
 
@@ -16,54 +19,142 @@ function newId(): string {
 
 export type NewRewardGoal = Omit<RewardGoal, "id" | "achievedOn">;
 
+function rowToGoal(row: RewardGoalRow): RewardGoal {
+  return {
+    id: row.id,
+    memberId: "khloe",
+    label: row.label,
+    emoji: row.emoji,
+    starsRequired: row.stars_required,
+    achievedOn: row.achieved_on ?? undefined,
+  };
+}
+
 /**
- * Les objectifs de récompense, personnalisables par les parents.
+ * Les objectifs de récompense de Khloé, personnalisables par les parents.
  *
- * Comme le calendrier et les repas : mémorisés sur l'appareil, avec les
- * trois objectifs de départ tant qu'aucun n'a été modifié.
+ * Une fois la base connectée, ils viennent de la table `reward_goals` —
+ * les mêmes pour Stéphane et Ernestine — plutôt que d'être propres à
+ * chaque appareil.
  */
 export function useRewardGoals() {
-  const [stored, setStored] = useStoredState<RewardGoal[] | null>(STORAGE_KEY, null);
+  const { shared, khloe } = useHouseholdShared();
+  const [localStored, setLocalStored] = useStoredState<RewardGoal[] | null>(STORAGE_KEY, null);
+  const [rows, setRows] = useState<RewardGoalRow[] | null>(null);
 
-  const goals = useMemo(() => stored ?? REWARD_GOALS, [stored]);
-  const currentList = useCallback(() => stored ?? REWARD_GOALS, [stored]);
+  useEffect(() => {
+    if (!shared || !khloe) return;
+    let cancelled = false;
+    const supabase = getSupabaseClient();
+    if (!supabase) return;
+
+    async function load() {
+      if (!supabase || !khloe) return;
+      const { data, error } = await supabase
+        .from("reward_goals")
+        .select("*")
+        .eq("member_id", khloe.id)
+        .order("sort_order", { ascending: true });
+      if (!cancelled && !error) setRows(data ?? []);
+    }
+
+    load();
+    const channel = supabase
+      .channel(`reward-goals-${khloe.household_id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "reward_goals",
+          filter: `household_id=eq.${khloe.household_id}`,
+        },
+        load,
+      )
+      .subscribe();
+
+    return () => {
+      cancelled = true;
+      void supabase.removeChannel(channel);
+    };
+  }, [shared, khloe]);
+
+  const localGoals = localStored ?? REWARD_GOALS;
+  const goals = shared ? (rows ? rows.map(rowToGoal) : []) : localGoals;
 
   const addGoal = useCallback(
-    (goal: NewRewardGoal): RewardGoal => {
+    (goal: NewRewardGoal) => {
+      if (shared && khloe) {
+        const supabase = getSupabaseClient();
+        if (!supabase) return;
+        void supabase.from("reward_goals").insert({
+          household_id: khloe.household_id,
+          member_id: khloe.id,
+          label: goal.label,
+          emoji: goal.emoji,
+          stars_required: goal.starsRequired,
+          sort_order: rows?.length ?? 0,
+        });
+        return;
+      }
       const created: RewardGoal = { ...goal, id: newId() };
-      setStored([...currentList(), created]);
-      return created;
+      setLocalStored([...localGoals, created]);
     },
-    [currentList, setStored],
+    [shared, khloe, rows, localGoals, setLocalStored],
   );
 
   const updateGoal = useCallback(
     (id: string, changes: Partial<NewRewardGoal>) => {
-      setStored(currentList().map((goal) => (goal.id === id ? { ...goal, ...changes } : goal)));
+      if (shared) {
+        const supabase = getSupabaseClient();
+        if (!supabase) return;
+        const patch: Partial<RewardGoalRow> = {};
+        if (changes.label !== undefined) patch.label = changes.label;
+        if (changes.emoji !== undefined) patch.emoji = changes.emoji;
+        if (changes.starsRequired !== undefined) patch.stars_required = changes.starsRequired;
+        void supabase.from("reward_goals").update(patch).eq("id", id);
+        return;
+      }
+      setLocalStored(localGoals.map((goal) => (goal.id === id ? { ...goal, ...changes } : goal)));
     },
-    [currentList, setStored],
+    [shared, localGoals, setLocalStored],
   );
 
   const deleteGoal = useCallback(
     (id: string) => {
-      setStored(currentList().filter((goal) => goal.id !== id));
+      if (shared) {
+        const supabase = getSupabaseClient();
+        if (!supabase) return;
+        void supabase.from("reward_goals").delete().eq("id", id);
+        return;
+      }
+      setLocalStored(localGoals.filter((goal) => goal.id !== id));
     },
-    [currentList, setStored],
+    [shared, localGoals, setLocalStored],
   );
 
   /** Marque un objectif comme débloqué, sans écraser une date déjà posée. */
   const markAchieved = useCallback(
     (id: string, date: string) => {
-      setStored(
-        currentList().map((goal) =>
-          goal.id === id && !goal.achievedOn ? { ...goal, achievedOn: date } : goal,
-        ),
+      if (shared) {
+        const supabase = getSupabaseClient();
+        if (!supabase) return;
+        // `is` plutôt que d'écraser : si deux appareils le détectent au même
+        // moment, seul le premier passage compte.
+        void supabase.from("reward_goals").update({ achieved_on: date }).eq("id", id).is("achieved_on", null);
+        return;
+      }
+      setLocalStored(
+        localGoals.map((goal) => (goal.id === id && !goal.achievedOn ? { ...goal, achievedOn: date } : goal)),
       );
     },
-    [currentList, setStored],
+    [shared, localGoals, setLocalStored],
   );
 
-  const resetToDemo = useCallback(() => setStored(null), [setStored]);
+  const resetToDemo = useCallback(() => {
+    if (shared) return;
+    setLocalStored(null);
+  }, [shared, setLocalStored]);
 
-  return { goals, addGoal, updateGoal, deleteGoal, markAchieved, resetToDemo };
+  return { goals, addGoal, updateGoal, deleteGoal, markAchieved, resetToDemo, shared };
 }

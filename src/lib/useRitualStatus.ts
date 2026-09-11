@@ -1,9 +1,10 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useStoredState } from "./localStore";
 import { useStars } from "./useStars";
-import { RITUALS } from "./family";
+import { useHouseholdShared } from "./supabase/household";
+import { getSupabaseClient } from "./supabase/client";
 import type { Ritual, RitualState } from "./types";
 
 export type RitualStatusMap = Record<string, RitualState>;
@@ -15,10 +16,95 @@ const EMPTY_STATUSES: RitualStatusMap = {};
  * d'étoiles qui va avec. Utilisé à la fois par le tableau des rituels et
  * par Tak, pour qu'une validation dite à l'oral compte de la même façon
  * qu'une validation faite du bout du doigt.
+ *
+ * Une fois la base connectée, ce suivi est partagé : ce que Khloé coche
+ * sur la tablette de la cuisine, ou qu'un parent valide depuis son
+ * téléphone, apparaît chez tout le monde.
  */
 export function useRitualStatus(today: string) {
-  const [statuses, setStatuses] = useStoredState<RitualStatusMap>(`rituels:${today}`, EMPTY_STATUSES);
+  const { shared, khloe, actingMember } = useHouseholdShared();
+  const [localStatuses, setLocalStatuses] = useStoredState<RitualStatusMap>(
+    `rituels:${today}`,
+    EMPTY_STATUSES,
+  );
+  const [sharedStatuses, setSharedStatuses] = useState<RitualStatusMap | null>(null);
   const { total: starsEarned, logStar, unlogStar } = useStars();
+
+  useEffect(() => {
+    if (!shared || !khloe) return;
+    let cancelled = false;
+    const supabase = getSupabaseClient();
+    if (!supabase) return;
+
+    async function load() {
+      if (!supabase || !khloe) return;
+      const { data, error } = await supabase
+        .from("ritual_status")
+        .select("ritual_id, state")
+        .eq("household_id", khloe.household_id)
+        .eq("status_date", today);
+      if (!cancelled && !error) {
+        const map: RitualStatusMap = {};
+        for (const row of data ?? []) map[row.ritual_id] = row.state;
+        setSharedStatuses(map);
+      }
+    }
+
+    load();
+    const channel = supabase
+      .channel(`ritual-status-${khloe.household_id}-${today}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "ritual_status",
+          filter: `household_id=eq.${khloe.household_id}`,
+        },
+        load,
+      )
+      .subscribe();
+
+    return () => {
+      cancelled = true;
+      void supabase.removeChannel(channel);
+    };
+  }, [shared, khloe, today]);
+
+  const statuses = shared ? (sharedStatuses ?? EMPTY_STATUSES) : localStatuses;
+
+  const writeStatus = useCallback(
+    (ritualId: string, state: "coche" | "valide") => {
+      const supabase = getSupabaseClient();
+      if (!supabase || !khloe) return;
+      void supabase.from("ritual_status").upsert(
+        {
+          household_id: khloe.household_id,
+          ritual_id: ritualId,
+          status_date: today,
+          state,
+          approved_by: state === "valide" ? (actingMember?.id ?? null) : null,
+          approved_at: state === "valide" ? new Date().toISOString() : null,
+        },
+        { onConflict: "ritual_id,status_date" },
+      );
+    },
+    [khloe, today, actingMember],
+  );
+
+  const clearStatus = useCallback(
+    (ritualId: string) => {
+      const supabase = getSupabaseClient();
+      if (!supabase || !khloe) return;
+      void supabase
+        .from("ritual_status")
+        .delete()
+        .eq("household_id", khloe.household_id)
+        .eq("ritual_id", ritualId)
+        .eq("status_date", today);
+    },
+    [khloe, today],
+  );
 
   /** Coche ou décoche un rituel ; passe par « à valider » s'il faut l'accord d'un parent. */
   const toggle = useCallback(
@@ -26,47 +112,65 @@ export function useRitualStatus(today: string) {
       const state = statuses[ritual.id];
       if (state === undefined) {
         const nextState: RitualState = ritual.needsParentApproval ? "coche" : "valide";
-        setStatuses((current) => ({ ...current, [ritual.id]: nextState }));
-        if (nextState === "valide") logStar(ritual.id, today, ritual.stars);
+        if (shared) {
+          writeStatus(ritual.id, nextState);
+        } else {
+          setLocalStatuses((current) => ({ ...current, [ritual.id]: nextState }));
+          if (nextState === "valide") logStar(ritual.id, today, ritual.stars);
+        }
       } else {
-        setStatuses((current) => {
-          const next = { ...current };
-          delete next[ritual.id];
-          return next;
-        });
-        if (state === "valide") unlogStar(ritual.id, today);
+        if (shared) {
+          clearStatus(ritual.id);
+        } else {
+          setLocalStatuses((current) => {
+            const next = { ...current };
+            delete next[ritual.id];
+            return next;
+          });
+          if (state === "valide") unlogStar(ritual.id, today);
+        }
       }
     },
-    [statuses, setStatuses, logStar, unlogStar, today],
+    [statuses, shared, writeStatus, clearStatus, setLocalStatuses, logStar, unlogStar, today],
   );
 
   /** Un parent confirme un rituel déjà coché par Khloé. */
   const approve = useCallback(
     (ritual: Ritual) => {
-      setStatuses((current) => ({ ...current, [ritual.id]: "valide" }));
-      logStar(ritual.id, today, ritual.stars);
+      if (shared) {
+        writeStatus(ritual.id, "valide");
+      } else {
+        setLocalStatuses((current) => ({ ...current, [ritual.id]: "valide" }));
+        logStar(ritual.id, today, ritual.stars);
+      }
     },
-    [setStatuses, logStar, today],
+    [shared, writeStatus, setLocalStatuses, logStar, today],
   );
 
   /**
    * Valide directement un rituel par son identifiant, sans passer par l'état
    * intermédiaire « à valider ». Utilisé par Tak : dire qu'un rituel est fait
-   * équivaut à ce qu'un parent le confirme lui-même.
+   * équivaut à ce qu'un parent le confirme lui-même. `ritualsList` doit venir
+   * de `useRituals()`, pour retrouver le rituel qu'il vienne du code ou de
+   * la base.
    * Ne fait rien si le rituel est introuvable ; ne compte pas deux fois une
    * étoile déjà gagnée aujourd'hui.
    */
   const markValidated = useCallback(
-    (ritualId: string): boolean => {
-      const ritual = RITUALS.find((item) => item.id === ritualId);
+    (ritualId: string, ritualsList: Ritual[]): boolean => {
+      const ritual = ritualsList.find((item) => item.id === ritualId);
       if (!ritual) return false;
       if (statuses[ritualId] === "valide") return true;
-      setStatuses((current) => ({ ...current, [ritualId]: "valide" }));
-      logStar(ritual.id, today, ritual.stars);
+      if (shared) {
+        writeStatus(ritualId, "valide");
+      } else {
+        setLocalStatuses((current) => ({ ...current, [ritualId]: "valide" }));
+        logStar(ritual.id, today, ritual.stars);
+      }
       return true;
     },
-    [statuses, setStatuses, logStar, today],
+    [statuses, shared, writeStatus, setLocalStatuses, logStar, today],
   );
 
-  return { statuses, starsEarned, toggle, approve, markValidated };
+  return { statuses, starsEarned, toggle, approve, markValidated, shared };
 }

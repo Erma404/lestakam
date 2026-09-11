@@ -20,7 +20,7 @@ export function RewardsBoard({ initialIso }: RewardsBoardProps) {
   const now = useNow(initialIso, 60_000);
   const today = todayKey(now);
 
-  const { entries, total, resetToDemo: resetStars } = useStars();
+  const { entries, total, resetToDemo: resetStars, shared: starsShared } = useStars();
   const { goals, addGoal, updateGoal, deleteGoal, markAchieved } = useRewardGoals();
 
   const [editing, setEditing] = useState<RewardGoal | null>(null);
@@ -158,7 +158,7 @@ export function RewardsBoard({ initialIso }: RewardsBoardProps) {
         </Card>
       ) : null}
 
-      {confirmingReset ? (
+      {starsShared ? null : confirmingReset ? (
         <p className="flex flex-wrap items-center gap-3 text-sm font-bold text-ink">
           Remettre le compteur d&apos;étoiles à zéro ?
           <button

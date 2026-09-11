@@ -5,6 +5,7 @@ import { RecipeCard, type Recipe } from "./RecipeCard";
 import { useEvents } from "@/lib/useEvents";
 import { useMeals } from "@/lib/useMeals";
 import { useShoppingList } from "@/lib/useShoppingList";
+import { useRituals } from "@/lib/useRituals";
 import { useRitualStatus } from "@/lib/useRitualStatus";
 import { formatLongDate, todayKey } from "@/lib/dates";
 import type { TakAction } from "@/lib/tak";
@@ -69,6 +70,7 @@ export function TakWidget() {
   const { addEvent } = useEvents();
   const { addMeal } = useMeals();
   const { addItem } = useShoppingList();
+  const { rituals } = useRituals();
   const { markValidated } = useRitualStatus(today);
 
   const [open, setOpen] = useState(false);
@@ -216,7 +218,7 @@ export function TakWidget() {
         pushHistory(pending.heard, `« ${action.label} » a été ajouté à la liste de courses.`, "success");
         break;
       case "valider_rituel": {
-        const ok = markValidated(action.ritualId);
+        const ok = markValidated(action.ritualId, rituals);
         pushHistory(
           pending.heard,
           ok ? "Rituel validé, bravo Khloé ! ⭐" : "Ce rituel n'a pas été retrouvé.",
