@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { getSupabaseClient } from "@/lib/supabase/client";
 
-type Status = "saisie" | "envoi" | "envoye" | "erreur";
+type Status = "saisie-email" | "envoi" | "saisie-code" | "verification" | "erreur";
 
 /** Délai au-delà duquel on cesse d'attendre le serveur, en millisecondes. */
 const TIMEOUT_MS = 15_000;
@@ -26,15 +26,19 @@ async function withTimeout<T>(promise: Promise<T>): Promise<T | "delai-depasse">
 }
 
 /**
- * Connexion par lien envoyé par e-mail : aucun mot de passe à créer,
- * à retenir ni à saisir sur la tablette de la cuisine.
+ * Connexion par code reçu par e-mail : aucun mot de passe à créer, ni à
+ * retenir. Un code plutôt qu'un lien cliquable, parce que les messageries
+ * et antivirus ouvrent parfois les liens tout seuls pour les vérifier —
+ * ce qui grille le lien avant même que la personne ait cliqué dessus.
  */
 export function SignInScreen() {
   const [email, setEmail] = useState("");
-  const [status, setStatus] = useState<Status>("saisie");
+  const [code, setCode] = useState("");
+  const [status, setStatus] = useState<Status>("saisie-email");
   const [message, setMessage] = useState<string | null>(null);
+  const codeInputRef = useRef<HTMLInputElement>(null);
 
-  async function handleSubmit(formEvent: React.FormEvent) {
+  async function handleSendCode(formEvent: React.FormEvent) {
     formEvent.preventDefault();
 
     const supabase = getSupabaseClient();
@@ -50,15 +54,12 @@ export function SignInScreen() {
     const result = await withTimeout(
       supabase.auth.signInWithOtp({
         email: email.trim(),
-        options: {
-          emailRedirectTo: `${window.location.origin}/connexion/retour`,
-          shouldCreateUser: true,
-        },
+        options: { shouldCreateUser: true },
       }),
     );
 
     if (result === "delai-depasse") {
-      setStatus("erreur");
+      setStatus("saisie-email");
       setMessage(
         "Le serveur met trop de temps à répondre. Vérifiez la connexion internet, puis réessayez.",
       );
@@ -66,14 +67,51 @@ export function SignInScreen() {
     }
 
     if (result.error) {
-      setStatus("erreur");
+      setStatus("saisie-email");
       setMessage(
         "L'envoi n'a pas fonctionné. Vérifiez l'adresse e-mail et réessayez dans un instant.",
       );
       return;
     }
 
-    setStatus("envoye");
+    setStatus("saisie-code");
+    setCode("");
+    window.setTimeout(() => codeInputRef.current?.focus(), 0);
+  }
+
+  async function handleVerifyCode(formEvent: React.FormEvent) {
+    formEvent.preventDefault();
+
+    const supabase = getSupabaseClient();
+    if (!supabase) return;
+
+    setStatus("verification");
+    setMessage(null);
+
+    const result = await withTimeout(
+      supabase.auth.verifyOtp({
+        email: email.trim(),
+        token: code.trim(),
+        type: "email",
+      }),
+    );
+
+    if (result === "delai-depasse") {
+      setStatus("saisie-code");
+      setMessage(
+        "Le serveur met trop de temps à répondre. Vérifiez la connexion internet, puis réessayez.",
+      );
+      return;
+    }
+
+    if (result.error) {
+      setStatus("saisie-code");
+      setMessage("Ce code n'est plus valable. Vérifiez-le, ou demandez-en un nouveau.");
+      return;
+    }
+
+    // La connexion se propage toute seule : SessionProvider écoute les
+    // changements de session et affiche l'application dès qu'elle arrive.
   }
 
   return (
@@ -89,29 +127,63 @@ export function SignInScreen() {
           </p>
         </div>
 
-        {status === "envoye" ? (
-          <div className="rounded-card bg-sage-soft px-5 py-6 text-center">
-            <p className="text-3xl" aria-hidden>
-              📬
-            </p>
-            <p className="mt-2 text-base font-extrabold text-ink">C&apos;est envoyé !</p>
-            <p className="mt-1 text-sm font-semibold text-ink-soft">
-              Ouvrez le message reçu à l&apos;adresse <strong>{email}</strong> et appuyez sur le
-              lien qu&apos;il contient. Vous serez connecté automatiquement.
-            </p>
+        {status === "saisie-code" || status === "verification" ? (
+          <form onSubmit={handleVerifyCode} className="flex flex-col gap-4">
+            <div className="rounded-card bg-sage-soft px-5 py-4 text-center">
+              <p className="text-2xl" aria-hidden>
+                📬
+              </p>
+              <p className="mt-1 text-sm font-bold text-ink">
+                Un code a été envoyé à <strong>{email}</strong>
+              </p>
+            </div>
+
+            <label className="flex flex-col gap-1.5">
+              <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-ink-faint">
+                Code reçu par e-mail
+              </span>
+              <input
+                ref={codeInputRef}
+                type="text"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                value={code}
+                onChange={(changeEvent) => setCode(changeEvent.target.value)}
+                required
+                maxLength={8}
+                placeholder="123456"
+                className="min-h-16 w-full rounded-3xl border border-line bg-white px-4 py-3 text-center text-3xl font-extrabold tracking-[0.3em] text-ink outline-none placeholder:text-ink-faint focus:border-sage focus:ring-2 focus:ring-sage-soft"
+              />
+            </label>
+
+            {message ? (
+              <p role="alert" className="rounded-3xl bg-rose-soft px-4 py-3 text-sm font-bold text-ink">
+                {message}
+              </p>
+            ) : null}
+
+            <button
+              type="submit"
+              disabled={status === "verification"}
+              className="min-h-14 rounded-pill bg-sage px-6 text-base font-extrabold text-white hover:brightness-95 disabled:opacity-60"
+            >
+              {status === "verification" ? "Vérification…" : "Se connecter"}
+            </button>
+
             <button
               type="button"
               onClick={() => {
-                setStatus("saisie");
+                setStatus("saisie-email");
                 setMessage(null);
+                setCode("");
               }}
-              className="mt-4 min-h-11 rounded-pill bg-white px-5 text-sm font-extrabold text-ink-soft"
+              className="min-h-11 rounded-pill bg-white px-5 text-sm font-extrabold text-ink-soft"
             >
               Utiliser une autre adresse
             </button>
-          </div>
+          </form>
         ) : (
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <form onSubmit={handleSendCode} className="flex flex-col gap-4">
             <label className="flex flex-col gap-1.5">
               <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-ink-faint">
                 Votre adresse e-mail
@@ -128,7 +200,7 @@ export function SignInScreen() {
             </label>
 
             <p className="text-xs font-semibold text-ink-soft">
-              Nous vous enverrons un lien de connexion. Aucun mot de passe n&apos;est nécessaire.
+              Nous vous enverrons un code à saisir. Aucun mot de passe n&apos;est nécessaire.
             </p>
 
             {message ? (
@@ -142,7 +214,7 @@ export function SignInScreen() {
               disabled={status === "envoi"}
               className="min-h-14 rounded-pill bg-sage px-6 text-base font-extrabold text-white hover:brightness-95 disabled:opacity-60"
             >
-              {status === "envoi" ? "Envoi en cours…" : "Recevoir mon lien de connexion"}
+              {status === "envoi" ? "Envoi en cours…" : "Recevoir mon code de connexion"}
             </button>
           </form>
         )}

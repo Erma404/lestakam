@@ -28,7 +28,10 @@ Conçu pour deux usages :
 - **Calendrier** : ajout, modification et suppression des événements, répétition
   chaque semaine, filtre par personne. Ce qui est ajouté apparaît aussitôt sur le
   tableau de bord.
-- **Connexion des parents** par lien envoyé par e-mail, sans mot de passe.
+- **Connexion des parents** par code reçu par e-mail, sans mot de passe. Un code plutôt
+  qu'un lien cliquable : certaines messageries et antivirus ouvrent les liens tout
+  seuls pour les vérifier, ce qui grille un lien à usage unique avant même que la
+  personne ait cliqué dessus.
 - **Repas** : planning à 7 jours (midi et soir), avec un envoi direct d'un repas vers
   la liste de courses.
 - **Liste de courses** : ajout rapide, regroupement par rayon, purge des articles cochés.
@@ -63,12 +66,9 @@ Pour passer en mode partagé :
    « anon public ». Les reporter dans Vercel, sous **Settings > Environment
    Variables**, aux noms indiqués dans `.env.example`. La clé `service_role` ne
    doit jamais être utilisée ici.
-3. Dans Supabase, **Authentication > URL Configuration**, ajouter l'adresse de
-   l'application suivie de `/connexion/retour` aux adresses de redirection
-   autorisées.
-4. Demander un lien de connexion depuis l'application, avec l'adresse e-mail de
-   chaque parent, afin de créer les deux comptes.
-5. Exécuter `supabase/02-donnees-de-depart.sql` après y avoir inscrit les deux
+3. Demander un code de connexion depuis l'application, avec l'adresse e-mail de
+   chaque parent, et le saisir, afin de créer les deux comptes.
+4. Exécuter `supabase/02-donnees-de-depart.sql` après y avoir inscrit les deux
    adresses e-mail. Ce script crée le foyer, les trois membres, les rituels de
    Khloé et ses objectifs de récompense.
 
