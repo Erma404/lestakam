@@ -1,5 +1,7 @@
 import type { RewardGoal } from "./types";
-import { startOfWeek } from "./dates";
+import { startOfMonth, startOfWeek } from "./dates";
+
+export { startOfMonth };
 
 export interface StarEntry {
   id: string;
@@ -12,11 +14,6 @@ export interface StarEntry {
 /** Total d'étoiles jamais gagnées, toutes dates confondues. */
 export function totalStars(entries: StarEntry[]): number {
   return entries.reduce((total, entry) => total + entry.stars, 0);
-}
-
-/** Premier jour du mois contenant cette date. */
-export function startOfMonth(date: string): string {
-  return `${date.slice(0, 7)}-01`;
 }
 
 /** Étoiles gagnées depuis une date donnée, incluse. */

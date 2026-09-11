@@ -49,6 +49,33 @@ export function weekDays(date: string): string[] {
   return Array.from({ length: 7 }, (_, index) => addDays(start, index));
 }
 
+/** Premier jour du mois contenant cette date. */
+export function startOfMonth(date: string): string {
+  return `${date.slice(0, 7)}-01`;
+}
+
+/**
+ * Décale une date d'un certain nombre de mois, sans dérive de jour — ex. en
+ * partant du 31 janvier, un mois plus tard donne le dernier jour de février,
+ * jamais mars.
+ */
+export function shiftMonth(date: string, months: number): string {
+  const parsed = fromDateKey(date);
+  parsed.setDate(1);
+  parsed.setMonth(parsed.getMonth() + months);
+  return toDateKey(parsed);
+}
+
+/**
+ * Les jours affichés dans une vue mensuelle : 6 semaines complètes (lundi à
+ * dimanche) couvrant le mois, avec quelques jours des mois voisins pour
+ * remplir la grille.
+ */
+export function monthGridDays(date: string): string[] {
+  const gridStart = startOfWeek(startOfMonth(date));
+  return Array.from({ length: 42 }, (_, index) => addDays(gridStart, index));
+}
+
 /** Ex. « jeudi 11 septembre ». */
 export function formatLongDate(key: string): string {
   return new Intl.DateTimeFormat("fr-FR", {
@@ -56,6 +83,37 @@ export function formatLongDate(key: string): string {
     day: "numeric",
     month: "long",
   }).format(fromDateKey(key));
+}
+
+/** Ex. « septembre 2026 ». */
+export function formatMonthYear(key: string): string {
+  return new Intl.DateTimeFormat("fr-FR", { month: "long", year: "numeric" }).format(
+    fromDateKey(key),
+  );
+}
+
+/** Ex. « sept. » — pour les libellés courts (grille mensuelle). */
+export function formatMonthShort(key: string): string {
+  return new Intl.DateTimeFormat("fr-FR", { month: "short" }).format(fromDateKey(key));
+}
+
+function capitalizeFirst(text: string): string {
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+/**
+ * Le mois (et l'année) d'une fenêtre de jours, pour qu'on sache toujours
+ * « on est en quel mois » même en ne regardant qu'une bande de jours.
+ * Ex. « Septembre 2026 », ou « sept. – oct. 2026 » si la fenêtre chevauche
+ * deux mois.
+ */
+export function formatDateRangeMonth(days: string[]): string {
+  const first = days[0];
+  const last = days[days.length - 1];
+  const firstMonth = formatMonthYear(first);
+  const lastMonth = formatMonthYear(last);
+  if (firstMonth === lastMonth) return capitalizeFirst(firstMonth);
+  return `${capitalizeFirst(formatMonthShort(first))} – ${capitalizeFirst(lastMonth)}`;
 }
 
 /** Ex. « JEU » pour la bande des 7 jours. */

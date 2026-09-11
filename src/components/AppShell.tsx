@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { SignInScreen } from "./SignInScreen";
+import { TakWidget } from "./TakWidget";
 import { useSession } from "@/lib/supabase/session";
 
 interface NavItem {
@@ -18,7 +19,6 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/calendrier", label: "Calendrier", emoji: "🗓️" },
   { href: "/rituels", label: "Rituels", emoji: "✅" },
   { href: "/recompenses", label: "Récompenses", emoji: "⭐" },
-  { href: "/tak", label: "Tak", emoji: "💬" },
   { href: "/repas", label: "Repas", emoji: "🍽️", secondary: true },
   { href: "/listes", label: "Listes", emoji: "🛒", secondary: true },
   { href: "/reglages", label: "Réglages", emoji: "⚙️", secondary: true },
@@ -61,12 +61,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         aria-label="Navigation principale"
         className="hidden shrink-0 flex-col gap-1 border-r border-line bg-cream-deep/60 px-3 py-6 md:flex md:w-28 lg:w-36"
       >
-        <div className="mb-4 px-2 text-center">
+        <Link href="/" className="mb-4 block rounded-3xl px-2 py-1 text-center hover:bg-cream">
           <span className="text-2xl" aria-hidden>
             🏠
           </span>
-          <p className="mt-1 text-sm font-extrabold tracking-tight text-ink">LesTakam</p>
-        </div>
+          <p className="mt-1 text-sm font-extrabold leading-tight tracking-tight text-ink">
+            Hello
+            <br />
+            les Takam !
+          </p>
+        </Link>
 
         {NAV_ITEMS.map((item) => {
           const active = isActive(pathname, item.href);
@@ -119,6 +123,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           );
         })}
       </nav>
+
+      <TakWidget />
     </div>
   );
 }

@@ -13,17 +13,20 @@ import { describeWeather } from "@/lib/weather";
 import { CATEGORY_ACCENT, CATEGORY_LABEL, accentClasses } from "@/lib/accents";
 import {
   currentTime as formatClock,
+  formatDateRangeMonth,
   formatDayNumber,
   formatLongDate,
   formatRelativeDay,
   formatWeekdayShort,
   todayKey,
 } from "@/lib/dates";
+import { remainingCount } from "@/lib/shopping";
 import { useEvents, type NewEvent } from "@/lib/useEvents";
 import { useNow } from "@/lib/useNow";
 import { useReminders, type NewReminder } from "@/lib/useReminders";
+import { useShoppingList } from "@/lib/useShoppingList";
 import { useWeather } from "@/lib/useWeather";
-import type { CalendarEvent, MemberId, Reminder, WeatherForecast } from "@/lib/types";
+import type { CalendarEvent, MemberId, Reminder, ShoppingItem, WeatherForecast } from "@/lib/types";
 
 interface DashboardProps {
   /** Heure calculée par le serveur, utilisée pour le tout premier affichage. */
@@ -46,6 +49,7 @@ export function Dashboard({ initialIso }: DashboardProps) {
 
   const { events: allEvents, addEvent, updateEvent, deleteEvent } = useEvents();
   const { reminders, addReminder, updateReminder, toggleDone, deleteReminder } = useReminders();
+  const { items: shoppingItems, toggleItem: toggleShoppingItem } = useShoppingList();
   const week = useMemo(() => sevenDayWindow(today), [today]);
   const events = useMemo(() => expandEvents(allEvents, week), [allEvents, week]);
 
@@ -124,6 +128,8 @@ export function Dashboard({ initialIso }: DashboardProps) {
         onEdit={setEditingReminder}
         onToggleDone={toggleDone}
       />
+
+      <ShoppingSection items={shoppingItems} onToggle={toggleShoppingItem} />
 
       {forecast ? (
         <OutfitSection
@@ -326,7 +332,7 @@ function WeekSection({
     <Card>
       <CardTitle
         eyebrow="7 prochains jours"
-        title="La semaine"
+        title={formatDateRangeMonth(week)}
         action={
           <Link
             href="/calendrier"
@@ -566,6 +572,86 @@ function RemindersSection({
               </li>
             );
           })}
+        </ul>
+      )}
+    </Card>
+  );
+}
+
+/** Nombre d'articles affichés avant de renvoyer vers la liste complète. */
+const SHOPPING_PREVIEW_COUNT = 6;
+
+function ShoppingSection({
+  items,
+  onToggle,
+}: {
+  items: ShoppingItem[];
+  onToggle: (id: string) => void;
+}) {
+  const left = remainingCount(items);
+  const preview = [...items]
+    .sort((a, b) => Number(a.checked) - Number(b.checked))
+    .slice(0, SHOPPING_PREVIEW_COUNT);
+  const hiddenCount = items.length - preview.length;
+
+  return (
+    <Card>
+      <CardTitle
+        eyebrow="Courses"
+        title={
+          left === 0 && items.length > 0
+            ? "Tout est dans le caddie 🎉"
+            : `${left} article${left > 1 ? "s" : ""} à prendre`
+        }
+        action={
+          <Link
+            href="/listes"
+            className="inline-flex min-h-11 items-center rounded-pill bg-cream-deep px-4 text-xs font-bold text-ink-soft hover:bg-line"
+          >
+            Toute la liste
+          </Link>
+        }
+      />
+      {items.length === 0 ? (
+        <p className="rounded-3xl bg-cream-deep/60 px-4 py-6 text-center text-sm font-semibold text-ink-soft">
+          La liste est vide. 🌿
+        </p>
+      ) : (
+        <ul className="flex flex-col gap-2">
+          {preview.map((item) => (
+            <li key={item.id} className="flex items-center gap-3 rounded-3xl bg-white/80 px-4 py-2.5">
+              <button
+                type="button"
+                onClick={() => onToggle(item.id)}
+                aria-pressed={item.checked}
+                aria-label={item.checked ? "Décocher cet article" : "Cocher cet article"}
+                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 text-base ${
+                  item.checked
+                    ? "border-sage bg-sage text-white"
+                    : "border-line bg-white text-transparent"
+                }`}
+              >
+                ✓
+              </button>
+              <span
+                className={`min-w-0 flex-1 truncate text-sm font-extrabold ${
+                  item.checked ? "text-ink-faint line-through" : "text-ink"
+                }`}
+              >
+                {item.label}
+                {item.quantity ? (
+                  <span className="ml-2 text-xs font-semibold text-ink-faint">
+                    {item.quantity}
+                  </span>
+                ) : null}
+              </span>
+            </li>
+          ))}
+          {hiddenCount > 0 ? (
+            <li className="px-2 text-xs font-bold text-ink-faint">
+              +{hiddenCount} autre{hiddenCount > 1 ? "s" : ""} article{hiddenCount > 1 ? "s" : ""}
+            </li>
+          ) : null}
         </ul>
       )}
     </Card>

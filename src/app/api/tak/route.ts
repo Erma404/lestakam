@@ -1,7 +1,9 @@
-import { generateObject, generateText, NoObjectGeneratedError } from "ai";
+import { generateObject, NoObjectGeneratedError } from "ai";
 import {
   buildTakSystemPrompt,
   describeTakAction,
+  findDishImage,
+  recipeSchema,
   takModelSchema,
   toTakAction,
   youtubeSearchUrl,
@@ -42,20 +44,25 @@ export async function POST(request: Request) {
     const object = toTakAction(raw);
 
     if (object.action === "chercher_recette") {
-      const { text: recette } = await generateText({
-        model: MODEL,
-        system:
-          "Tu donnes une recette simple et familiale, en français, pour une famille avec un " +
-          "jeune enfant. Format court : une liste d'ingrédients puis les étapes numérotées. " +
-          "Pas d'introduction ni de conclusion, va droit à la recette.",
-        prompt: `Recette : ${object.plat}`,
-      });
+      const [{ object: recipe }, imageUrl] = await Promise.all([
+        generateObject({
+          model: MODEL,
+          schema: recipeSchema,
+          system:
+            "Tu donnes une recette simple et familiale, en français, pour une famille avec un " +
+            "jeune enfant. Des ingrédients courants, une préparation qui reste accessible.",
+          prompt: `Recette : ${object.plat}`,
+        }),
+        findDishImage(object.plat),
+      ]);
 
       return Response.json({
         ok: true,
         action: object,
         summary: describeTakAction(object),
-        recette,
+        ingredients: recipe.ingredients,
+        etapes: recipe.etapes,
+        imageUrl,
         youtubeUrl: youtubeSearchUrl(object.plat),
       });
     }

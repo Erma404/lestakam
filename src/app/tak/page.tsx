@@ -1,9 +1,10 @@
-import { TakView } from "@/components/TakView";
+import { redirect } from "next/navigation";
 
-export const metadata = { title: "Tak · LesTakam" };
-
-export const dynamic = "force-dynamic";
-
+/**
+ * Tak n'a plus d'écran dédié : c'est une bulle flottante présente sur
+ * toutes les pages (voir `TakWidget`). D'anciens liens vers /tak renvoient
+ * simplement vers l'accueil.
+ */
 export default function TakPage() {
-  return <TakView initialIso={new Date().toISOString()} />;
+  redirect("/");
 }

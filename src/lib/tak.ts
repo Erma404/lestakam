@@ -208,6 +208,51 @@ export function youtubeSearchUrl(plat: string): string {
   return `https://www.youtube.com/results?search_query=${query}`;
 }
 
+/** Recette structurée, pour l'afficher avec des ingrédients et des étapes séparés. */
+export const recipeSchema = z.object({
+  ingredients: z.array(z.string().min(1)).min(1),
+  etapes: z.array(z.string().min(1)).min(1),
+});
+
+export type Recipe = z.infer<typeof recipeSchema>;
+
+/**
+ * Cherche une vraie photo du plat sur Wikimedia Commons (médiathèque libre
+ * de droits, sans clé d'accès). Renvoie `null` sans lever d'erreur si rien
+ * de pertinent n'est trouvé ou si le service est indisponible — la recette
+ * reste utilisable sans image.
+ */
+export async function findDishImage(plat: string): Promise<string | null> {
+  try {
+    const query = encodeURIComponent(`${plat} plat cuisine`);
+    const url =
+      `https://commons.wikimedia.org/w/api.php?action=query&format=json&origin=*` +
+      `&generator=search&gsrnamespace=6&gsrlimit=6&gsrsearch=${query}` +
+      `&prop=imageinfo&iiprop=url&iiurlwidth=800`;
+
+    const response = await fetch(url, {
+      headers: { "User-Agent": "LesTakam/1.0 (application familiale, usage non commercial)" },
+      signal: AbortSignal.timeout(6000),
+    });
+    if (!response.ok) return null;
+
+    const data = (await response.json()) as {
+      query?: { pages?: Record<string, { imageinfo?: { thumburl?: string; url?: string }[] }> };
+    };
+    const pages = data.query?.pages;
+    if (!pages) return null;
+
+    for (const page of Object.values(pages)) {
+      const info = page.imageinfo?.[0];
+      const src = info?.thumburl ?? info?.url;
+      if (src && /\.(jpe?g|png)$/i.test(src)) return src;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 /** Contexte donné au modèle pour comprendre une commande de la famille. */
 export function buildTakSystemPrompt(today: string, weekday: string): string {
   const membersList = MEMBERS.map((member) => `- ${member.id} : ${member.firstName} (${member.role})`).join(

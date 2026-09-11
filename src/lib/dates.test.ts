@@ -2,11 +2,16 @@ import { describe, expect, it } from "vitest";
 import {
   addDays,
   currentMoment,
+  formatDateRangeMonth,
   formatDayNumber,
   formatLongDate,
+  formatMonthYear,
   formatRelativeDay,
   formatWeekdayShort,
+  monthGridDays,
   nextSevenDays,
+  shiftMonth,
+  startOfMonth,
   startOfWeek,
   toDateKey,
   todayKey,
@@ -82,6 +87,53 @@ describe("weekDays", () => {
       "2026-09-12",
       "2026-09-13",
     ]);
+  });
+});
+
+describe("startOfMonth", () => {
+  it("renvoie le premier jour du mois", () => {
+    expect(startOfMonth("2026-09-11")).toBe("2026-09-01");
+  });
+});
+
+describe("shiftMonth", () => {
+  it("avance d'un mois", () => {
+    expect(shiftMonth("2026-09-11", 1)).toBe("2026-10-01");
+  });
+
+  it("recule d'un mois", () => {
+    expect(shiftMonth("2026-09-11", -1)).toBe("2026-08-01");
+  });
+
+  it("ne dérive pas sur un mois plus court", () => {
+    // 31 janvier + 1 mois ne doit pas déborder sur mars.
+    expect(shiftMonth("2026-01-31", 1)).toBe("2026-02-01");
+  });
+});
+
+describe("monthGridDays", () => {
+  it("renvoie 42 jours en commençant un lundi", () => {
+    const days = monthGridDays("2026-09-11");
+    expect(days).toHaveLength(42);
+    expect(days[0]).toBe("2026-08-31");
+    expect(days[days.length - 1]).toBe("2026-10-11");
+  });
+});
+
+describe("formatMonthYear", () => {
+  it("formate le mois et l'année en toutes lettres", () => {
+    expect(formatMonthYear("2026-09-11")).toBe("septembre 2026");
+  });
+});
+
+describe("formatDateRangeMonth", () => {
+  it("donne un seul mois quand toute la fenêtre y tient", () => {
+    expect(formatDateRangeMonth(weekDays("2026-09-11"))).toBe("Septembre 2026");
+  });
+
+  it("combine les deux mois quand la fenêtre chevauche", () => {
+    // Semaine du 28 septembre au 4 octobre 2026.
+    expect(formatDateRangeMonth(weekDays("2026-09-30"))).toBe("Sept. – Octobre 2026");
   });
 });
 

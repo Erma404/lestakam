@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { Avatar } from "./Avatar";
 import { EventForm } from "./EventForm";
+import { MonthGrid } from "./MonthGrid";
 import { MEMBERS, memberById } from "@/lib/family";
 import {
   baseEventId,
@@ -15,8 +16,27 @@ import {
 import { useEvents, type NewEvent } from "@/lib/useEvents";
 import { useNow } from "@/lib/useNow";
 import { CATEGORY_ACCENT, CATEGORY_LABEL, accentClasses } from "@/lib/accents";
-import { addDays, formatDayNumber, formatWeekdayShort, todayKey, weekDays } from "@/lib/dates";
+import {
+  addDays,
+  formatDateRangeMonth,
+  formatDayNumber,
+  formatLongDate,
+  formatMonthYear,
+  formatWeekdayShort,
+  monthGridDays,
+  shiftMonth,
+  todayKey,
+  weekDays,
+} from "@/lib/dates";
 import type { CalendarEvent, MemberId } from "@/lib/types";
+
+type CalendarMode = "jour" | "semaine" | "mois";
+
+const MODE_LABEL: Record<CalendarMode, string> = {
+  jour: "Jour",
+  semaine: "Semaine",
+  mois: "Mois",
+};
 
 /** Fenêtre horaire affichée dans la grille : suffisant pour une journée de famille. */
 const GRID_START_HOUR = 6;
@@ -46,14 +66,20 @@ export function CalendarView({ initialIso }: CalendarViewProps) {
   const today = todayKey(now);
 
   const { events, addEvent, updateEvent, deleteEvent } = useEvents();
-  const [weekAnchor, setWeekAnchor] = useState(today);
+  const [view, setView] = useState<CalendarMode>("semaine");
+  const [anchor, setAnchor] = useState(today);
   const [filterMember, setFilterMember] = useState<MemberId | null>(null);
   const [editing, setEditing] = useState<CalendarEvent | null>(null);
   const [creating, setCreating] = useState<{ date: string; startTime?: string } | null>(null);
   const [confirmation, setConfirmation] = useState<string | null>(null);
 
-  const week = useMemo(() => weekDays(weekAnchor), [weekAnchor]);
-  const expanded = useMemo(() => expandEvents(events, week), [events, week]);
+  const visibleDays = useMemo(() => {
+    if (view === "jour") return [anchor];
+    if (view === "semaine") return weekDays(anchor);
+    return monthGridDays(anchor);
+  }, [view, anchor]);
+
+  const expanded = useMemo(() => expandEvents(events, visibleDays), [events, visibleDays]);
 
   function announce(message: string) {
     setConfirmation(message);
@@ -79,48 +105,63 @@ export function CalendarView({ initialIso }: CalendarViewProps) {
     setEditing(null);
   }
 
-  const monthLabel = new Intl.DateTimeFormat("fr-FR", { month: "long", year: "numeric" }).format(
-    new Date(`${week[0]}T12:00:00`),
-  );
+  function goPrevious() {
+    if (view === "jour") setAnchor((current) => addDays(current, -1));
+    else if (view === "semaine") setAnchor((current) => addDays(current, -7));
+    else setAnchor((current) => shiftMonth(current, -1));
+  }
+
+  function goNext() {
+    if (view === "jour") setAnchor((current) => addDays(current, 1));
+    else if (view === "semaine") setAnchor((current) => addDays(current, 7));
+    else setAnchor((current) => shiftMonth(current, 1));
+  }
+
+  const periodLabel =
+    view === "jour"
+      ? capitalize(formatLongDate(anchor))
+      : view === "mois"
+        ? capitalize(formatMonthYear(anchor))
+        : formatDateRangeMonth(visibleDays);
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-4 p-4 pb-28 sm:p-6 md:pb-6 lg:p-8">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-ink-faint">
-            {monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1)}
+            {view === "jour" ? "Vue par jour" : view === "mois" ? "Vue par mois" : "Vue par semaine"}
           </p>
           <h1 className="text-3xl font-extrabold tracking-tight text-ink sm:text-4xl">
-            Calendrier
+            {periodLabel}
           </h1>
         </div>
         <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={() => setWeekAnchor((current) => addDays(current, -7))}
-            aria-label="Semaine précédente"
+            onClick={goPrevious}
+            aria-label={`${MODE_LABEL[view]} précédent·e`}
             className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-lg font-bold text-ink-soft hover:bg-cream-deep"
           >
             ‹
           </button>
           <button
             type="button"
-            onClick={() => setWeekAnchor(today)}
+            onClick={() => setAnchor(today)}
             className="min-h-11 rounded-pill bg-white px-4 text-sm font-extrabold text-ink-soft hover:bg-cream-deep"
           >
             Aujourd&apos;hui
           </button>
           <button
             type="button"
-            onClick={() => setWeekAnchor((current) => addDays(current, 7))}
-            aria-label="Semaine suivante"
+            onClick={goNext}
+            aria-label={`${MODE_LABEL[view]} suivant·e`}
             className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-lg font-bold text-ink-soft hover:bg-cream-deep"
           >
             ›
           </button>
           <button
             type="button"
-            onClick={() => setCreating({ date: today })}
+            onClick={() => setCreating({ date: view === "mois" ? today : anchor })}
             className="ml-1 inline-flex min-h-11 items-center gap-1 rounded-pill bg-sage px-5 text-sm font-extrabold text-white hover:brightness-95"
           >
             <span aria-hidden>＋</span> Ajouter
@@ -134,55 +175,88 @@ export function CalendarView({ initialIso }: CalendarViewProps) {
         </p>
       ) : null}
 
-      <div className="flex flex-wrap gap-2">
-        <button
-          type="button"
-          onClick={() => setFilterMember(null)}
-          aria-pressed={filterMember === null}
-          className={`min-h-11 rounded-pill border-2 px-4 text-sm font-extrabold ${
-            filterMember === null
-              ? "border-ink-faint bg-cream-deep text-ink"
-              : "border-line bg-white text-ink-soft"
-          }`}
-        >
-          Toute la famille
-        </button>
-        {MEMBERS.map((member) => {
-          const selected = filterMember === member.id;
-          const accent = accentClasses(member.accent);
-          return (
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => setFilterMember(null)}
+            aria-pressed={filterMember === null}
+            className={`min-h-11 rounded-pill border-2 px-4 text-sm font-extrabold ${
+              filterMember === null
+                ? "border-ink-faint bg-cream-deep text-ink"
+                : "border-line bg-white text-ink-soft"
+            }`}
+          >
+            Toute la famille
+          </button>
+          {MEMBERS.map((member) => {
+            const selected = filterMember === member.id;
+            const accent = accentClasses(member.accent);
+            return (
+              <button
+                key={member.id}
+                type="button"
+                onClick={() => setFilterMember(selected ? null : member.id)}
+                aria-pressed={selected}
+                className={`flex min-h-11 items-center gap-2 rounded-pill border-2 px-3 text-sm font-extrabold ${
+                  selected
+                    ? `${accent.soft} border-ink-faint text-ink`
+                    : "border-line bg-white text-ink-soft"
+                }`}
+              >
+                <Avatar member={member} size="sm" />
+                {member.firstName}
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="inline-flex shrink-0 rounded-pill bg-cream-deep p-1">
+          {(Object.keys(MODE_LABEL) as CalendarMode[]).map((mode) => (
             <button
-              key={member.id}
+              key={mode}
               type="button"
-              onClick={() => setFilterMember(selected ? null : member.id)}
-              aria-pressed={selected}
-              className={`flex min-h-11 items-center gap-2 rounded-pill border-2 px-3 text-sm font-extrabold ${
-                selected
-                  ? `${accent.soft} border-ink-faint text-ink`
-                  : "border-line bg-white text-ink-soft"
+              onClick={() => setView(mode)}
+              aria-pressed={view === mode}
+              className={`min-h-9 rounded-pill px-4 text-xs font-extrabold ${
+                view === mode ? "bg-white text-ink shadow-sm" : "text-ink-soft hover:text-ink"
               }`}
             >
-              <Avatar member={member} size="sm" />
-              {member.firstName}
+              {MODE_LABEL[mode]}
             </button>
-          );
-        })}
+          ))}
+        </div>
       </div>
 
-      <WeekGrid
-        week={week}
-        today={today}
-        events={expanded}
-        filterMember={filterMember}
-        now={now}
-        onEditEvent={setEditing}
-        onCreateAt={(date, startTime) => setCreating({ date, startTime })}
-      />
+      {view === "mois" ? (
+        <MonthGrid
+          days={visibleDays}
+          currentMonth={anchor}
+          today={today}
+          events={expanded}
+          filterMember={filterMember}
+          onSelectDay={(date) => {
+            setAnchor(date);
+            setView("jour");
+          }}
+          onEditEvent={setEditing}
+        />
+      ) : (
+        <WeekGrid
+          week={visibleDays}
+          today={today}
+          events={expanded}
+          filterMember={filterMember}
+          now={now}
+          onEditEvent={setEditing}
+          onCreateAt={(date, startTime) => setCreating({ date, startTime })}
+        />
+      )}
 
       {editing || creating ? (
         <EventForm
           event={editing ?? undefined}
-          defaultDate={editing?.date ?? creating?.date ?? today}
+          defaultDate={editing?.date ?? creating?.date ?? anchor}
           defaultStartTime={editing ? undefined : creating?.startTime}
           onSave={handleSave}
           onDelete={editing ? handleDelete : undefined}
@@ -194,6 +268,10 @@ export function CalendarView({ initialIso }: CalendarViewProps) {
       ) : null}
     </div>
   );
+}
+
+function capitalize(text: string): string {
+  return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
 interface WeekGridProps {
