@@ -264,6 +264,14 @@ export function TakWidget() {
                 Dis-moi ce qu&apos;il faut faire, je m&apos;en occupe.
               </p>
             </div>
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              aria-label="Fermer Tak"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/80 text-lg font-bold text-ink-soft hover:bg-white"
+            >
+              ✕
+            </button>
           </header>
 
           <div className="flex flex-1 flex-col gap-4 overflow-y-auto p-4">
