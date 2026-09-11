@@ -222,32 +222,40 @@ export type Recipe = z.infer<typeof recipeSchema>;
  * de pertinent n'est trouvé ou si le service est indisponible — la recette
  * reste utilisable sans image.
  */
+async function searchDishImage(searchTerm: string): Promise<string | null> {
+  const query = encodeURIComponent(searchTerm);
+  const url =
+    `https://commons.wikimedia.org/w/api.php?action=query&format=json&origin=*` +
+    `&generator=search&gsrnamespace=6&gsrlimit=6&gsrsearch=${query}` +
+    `&prop=imageinfo&iiprop=url&iiurlwidth=800`;
+
+  const response = await fetch(url, {
+    headers: { "User-Agent": "LesTakam/1.0 (application familiale, usage non commercial)" },
+    signal: AbortSignal.timeout(6000),
+  });
+  if (!response.ok) return null;
+
+  const data = (await response.json()) as {
+    query?: { pages?: Record<string, { imageinfo?: { thumburl?: string; url?: string }[] }> };
+  };
+  const pages = data.query?.pages;
+  if (!pages) return null;
+
+  for (const page of Object.values(pages)) {
+    const info = page.imageinfo?.[0];
+    const src = info?.thumburl ?? info?.url;
+    if (src && /\.(jpe?g|png)$/i.test(src)) return src;
+  }
+  return null;
+}
+
 export async function findDishImage(plat: string): Promise<string | null> {
   try {
-    const query = encodeURIComponent(`${plat} plat cuisine`);
-    const url =
-      `https://commons.wikimedia.org/w/api.php?action=query&format=json&origin=*` +
-      `&generator=search&gsrnamespace=6&gsrlimit=6&gsrsearch=${query}` +
-      `&prop=imageinfo&iiprop=url&iiurlwidth=800`;
-
-    const response = await fetch(url, {
-      headers: { "User-Agent": "LesTakam/1.0 (application familiale, usage non commercial)" },
-      signal: AbortSignal.timeout(6000),
-    });
-    if (!response.ok) return null;
-
-    const data = (await response.json()) as {
-      query?: { pages?: Record<string, { imageinfo?: { thumburl?: string; url?: string }[] }> };
-    };
-    const pages = data.query?.pages;
-    if (!pages) return null;
-
-    for (const page of Object.values(pages)) {
-      const info = page.imageinfo?.[0];
-      const src = info?.thumburl ?? info?.url;
-      if (src && /\.(jpe?g|png)$/i.test(src)) return src;
-    }
-    return null;
+    // Les fichiers de Wikimedia Commons sont surtout titrés/décrits en
+    // anglais : chercher le nom du plat seul fonctionne mieux qu'en y
+    // ajoutant des mots génériques français (ex. « plat cuisine »), qui
+    // rétrécissent la recherche jusqu'à ne plus rien trouver.
+    return (await searchDishImage(plat)) ?? (await searchDishImage(`${plat} food`));
   } catch {
     return null;
   }
