@@ -1,19 +1,9 @@
-import { ComingSoon } from "@/components/ComingSoon";
+import { TakView } from "@/components/TakView";
 
 export const metadata = { title: "Tak · LesTakam" };
 
+export const dynamic = "force-dynamic";
+
 export default function TakPage() {
-  return (
-    <ComingSoon
-      emoji="💬"
-      title="Tak"
-      description="Votre assistant familial, à la voix comme au clavier"
-      planned={[
-        "Discussion écrite avec un ton chaleureux",
-        "Commande vocale, par exemple « ajoute le cours de natation de Khloé samedi à 10h »",
-        "Confirmation demandée avant toute modification du calendrier",
-        "Choix du modèle d'intelligence artificielle dans les réglages",
-      ]}
-    />
-  );
+  return <TakView initialIso={new Date().toISOString()} />;
 }

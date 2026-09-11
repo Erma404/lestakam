@@ -29,11 +29,21 @@ Conçu pour deux usages :
   chaque semaine, filtre par personne. Ce qui est ajouté apparaît aussitôt sur le
   tableau de bord.
 - **Connexion des parents** par lien envoyé par e-mail, sans mot de passe.
+- **Repas** : planning à 7 jours (midi et soir), avec un envoi direct d'un repas vers
+  la liste de courses.
+- **Liste de courses** : ajout rapide, regroupement par rayon, purge des articles cochés.
+- **Récompenses** : objectifs personnalisables par les parents, compteur d'étoiles
+  cumulé (semaine, mois, depuis le début) qui ne repart plus de zéro chaque matin,
+  déblocage automatique et historique des récompenses obtenues.
+- **Réglages** : état de la connexion, déconnexion, trombinoscope du foyer, remise
+  à zéro de chaque rubrique locale.
+- **Tak**, l'assistant vocal : on parle, il exécute (ajouter un événement, un repas,
+  un article, valider un rituel) ou cherche une recette. Voir [Activer Tak](#activer-tak).
 
 ## Ce qui reste à construire
 
-Assistant Tak (chat et voix), repas, listes de courses, page des récompenses,
-réglages, et le branchement des données sur la base partagée.
+Le branchement des rubriques ci-dessus (hors connexion et calendrier) sur la base
+partagée : elles restent pour l'instant mémorisées sur chaque appareil.
 
 ## Mise en service
 
@@ -62,6 +72,25 @@ Pour passer en mode partagé :
    adresses e-mail. Ce script crée le foyer, les trois membres, les rituels de
    Khloé et ses objectifs de récompense.
 
+## Activer Tak
+
+Tak comprend une phrase dite à l'oral (reconnaissance vocale du navigateur, gratuite,
+aucune clé) et la transforme en action grâce à un modèle de langage appelé via
+[Vercel AI Gateway](https://vercel.com/docs/ai-gateway). L'authentification se fait
+automatiquement par le projet Vercel (OIDC) : aucune clé API à créer ou coller
+dans le code.
+
+Il reste une seule chose à faire, dans le tableau de bord Vercel de l'équipe (**AI
+Gateway > Overview**) : ajouter une carte bancaire pour vérifier l'identité de
+l'équipe et débloquer les 5 $ de crédit gratuits par mois. Cette étape est propre à
+Vercel et ne peut pas être faite par un agent — il faut la faire soi-même depuis le
+tableau de bord. Sans elle, Tak répond simplement qu'il est indisponible ; le reste
+de l'application continue de fonctionner normalement.
+
+Tak ne fait que des ajouts (calendrier, repas, liste de courses, rituel validé) et
+demande toujours une confirmation avant d'agir, sauf pour une recherche de recette,
+qui n'importe aucune donnée. Il ne répond jamais à l'oral.
+
 ## Développement
 
 ```bash
@@ -79,6 +108,8 @@ npm run lint     # contrôle de qualité du code
 - [Tailwind CSS](https://tailwindcss.com/docs) pour la mise en forme.
 - Météo par [Open-Meteo](https://open-meteo.com/en/docs) : service public, gratuit,
   sans clé d'accès. Il est appelé depuis le serveur, jamais depuis la tablette.
+- Tak par [AI SDK](https://ai-sdk.dev/) et Vercel AI Gateway, appelés depuis le
+  serveur. Reconnaissance vocale par l'API Web Speech du navigateur.
 - Tests avec [Vitest](https://vitest.dev/).
 
 L'application reste utilisable si la météo est indisponible : la carte affiche un

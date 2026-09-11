@@ -4,23 +4,18 @@ import { useMemo } from "react";
 import { Avatar } from "./Avatar";
 import { Card, CardTitle } from "./Card";
 import { RITUALS, memberById } from "@/lib/family";
-import { useStoredState } from "@/lib/localStore";
 import { currentMoment, formatLongDate, todayKey } from "@/lib/dates";
 import { useNow } from "@/lib/useNow";
-import { useStars } from "@/lib/useStars";
+import { useRitualStatus } from "@/lib/useRitualStatus";
 import { useRewardGoals } from "@/lib/useRewardGoals";
 import { nextGoal as pickNextGoal } from "@/lib/rewards";
-import type { MomentOfDay, Ritual, RitualState } from "@/lib/types";
+import type { MomentOfDay } from "@/lib/types";
 
 const MOMENTS: { id: MomentOfDay; label: string; emoji: string; tone: string }[] = [
   { id: "matin", label: "Matin", emoji: "🌅", tone: "bg-sun-soft" },
   { id: "apres-midi", label: "Après-midi", emoji: "☀️", tone: "bg-sage-soft" },
   { id: "soir", label: "Soir", emoji: "🌙", tone: "bg-lilac-soft" },
 ];
-
-type StatusMap = Record<string, RitualState>;
-
-const EMPTY_STATUSES: StatusMap = {};
 
 interface RitualsBoardProps {
   /** Heure calculée par le serveur, utilisée pour le premier affichage. */
@@ -35,9 +30,8 @@ export function RitualsBoard({ initialIso, childMode = false }: RitualsBoardProp
   const today = todayKey(now);
   const currentSlot = currentMoment(now);
 
-  const [statuses, setStatuses] = useStoredState<StatusMap>(`rituels:${today}`, EMPTY_STATUSES);
   const khloe = memberById("khloe");
-  const { total: starsEarned, logStar, unlogStar } = useStars();
+  const { statuses, starsEarned, toggle: toggleChecked, approve } = useRitualStatus(today);
   const { goals } = useRewardGoals();
 
   const rituals = useMemo(() => RITUALS.filter((ritual) => ritual.memberId === "khloe"), []);
@@ -48,27 +42,6 @@ export function RitualsBoard({ initialIso, childMode = false }: RitualsBoardProp
 
   const starsPossible = rituals.reduce((total, ritual) => total + ritual.stars, 0);
   const doneCount = rituals.filter((ritual) => statuses[ritual.id] !== undefined).length;
-
-  function toggleChecked(ritual: Ritual) {
-    const state = statuses[ritual.id];
-    if (state === undefined) {
-      const nextState: RitualState = ritual.needsParentApproval ? "coche" : "valide";
-      setStatuses((current) => ({ ...current, [ritual.id]: nextState }));
-      if (nextState === "valide") logStar(ritual.id, today, ritual.stars);
-    } else {
-      setStatuses((current) => {
-        const next = { ...current };
-        delete next[ritual.id];
-        return next;
-      });
-      if (state === "valide") unlogStar(ritual.id, today);
-    }
-  }
-
-  function approve(ritual: Ritual) {
-    setStatuses((current) => ({ ...current, [ritual.id]: "valide" }));
-    logStar(ritual.id, today, ritual.stars);
-  }
 
   const nextGoal = pickNextGoal(goals) ?? goals[0];
 
