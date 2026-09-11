@@ -1,0 +1,69 @@
+@import "tailwindcss";
+
+@theme {
+  /* Fonds chaleureux */
+  --color-cream: #faf6ef;
+  --color-cream-deep: #f3ece0;
+  --color-ink: #2f2a24;
+  --color-ink-soft: #6f675c;
+  --color-ink-faint: #a49a8c;
+  --color-line: #e8e0d3;
+
+  /* Accents doux */
+  --color-sun: #f6c453;
+  --color-sun-soft: #fdf1d2;
+  --color-sage: #7fa87f;
+  --color-sage-soft: #e4efe2;
+  --color-terracotta: #d98A6a;
+  --color-terracotta-soft: #fbe6dc;
+  --color-sky: #7aa7c7;
+  --color-sky-soft: #e2eef6;
+  --color-lilac: #a08cc0;
+  --color-lilac-soft: #ece6f5;
+  --color-rose: #d98aa8;
+  --color-rose-soft: #fae3ec;
+
+  /* Coins bien arrondis, style convivial */
+  --radius-card: 1.75rem;
+  --radius-pill: 999px;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background-color: var(--color-cream);
+  color: var(--color-ink);
+  font-family: var(--font-body), ui-rounded, "SF Pro Rounded", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Cible tactile confortable pour la tablette de la cuisine */
+button,
+[role="button"] {
+  touch-action: manipulation;
+}
+
+/* Masque les barres de défilement sur la tablette, le défilement reste actif */
+.scrollbar-soft::-webkit-scrollbar {
+  height: 6px;
+  width: 6px;
+}
+.scrollbar-soft::-webkit-scrollbar-thumb {
+  background-color: var(--color-line);
+  border-radius: var(--radius-pill);
+}
+.scrollbar-soft::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
