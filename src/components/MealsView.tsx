@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Card } from "./Card";
 import { MealForm } from "./MealForm";
+import { MealIngredientsModal } from "./MealIngredientsModal";
 import { MEAL_MOMENT_LABEL, MEAL_MOMENTS, mealFor, mealsForDay } from "@/lib/meals";
 import { useMeals, type NewMeal } from "@/lib/useMeals";
 import { useShoppingList } from "@/lib/useShoppingList";
@@ -23,11 +24,12 @@ export function MealsView({ initialIso }: MealsViewProps) {
   const today = todayKey(now);
 
   const { meals, addMeal, updateMeal, deleteMeal } = useMeals();
-  const { addItem } = useShoppingList();
+  const { addItems } = useShoppingList();
 
   const [editing, setEditing] = useState<Meal | null>(null);
   const [creating, setCreating] = useState<{ date: string; moment: Meal["moment"] } | null>(null);
   const [confirmation, setConfirmation] = useState<string | null>(null);
+  const [pickingIngredientsFor, setPickingIngredientsFor] = useState<Meal | null>(null);
 
   const week = useMemo(
     () => Array.from({ length: HORIZON }, (_, index) => addDays(today, index)),
@@ -58,9 +60,14 @@ export function MealsView({ initialIso }: MealsViewProps) {
     setEditing(null);
   }
 
-  function sendToShoppingList(meal: Meal) {
-    addItem({ label: meal.title, fromMealId: meal.id });
-    announce(`« ${meal.title} » a été ajouté à la liste de courses.`);
+  function handleAddIngredients(meal: Meal, labels: string[]) {
+    addItems(labels.map((label) => ({ label, fromMealId: meal.id })));
+    setPickingIngredientsFor(null);
+    announce(
+      labels.length === 1 && labels[0] === meal.title
+        ? `« ${meal.title} » a été ajouté à la liste de courses.`
+        : `${labels.length} ingrédient${labels.length > 1 ? "s" : ""} ajouté${labels.length > 1 ? "s" : ""} à la liste de courses.`,
+    );
   }
 
   return (
@@ -130,7 +137,7 @@ export function MealsView({ initialIso }: MealsViewProps) {
                         </button>
                         <button
                           type="button"
-                          onClick={() => sendToShoppingList(meal)}
+                          onClick={() => setPickingIngredientsFor(meal)}
                           className="mt-2 min-h-9 w-full rounded-pill bg-cream-deep px-3 text-xs font-bold text-ink-soft hover:bg-cream"
                         >
                           🛒 Ajouter à la liste de courses
@@ -164,6 +171,14 @@ export function MealsView({ initialIso }: MealsViewProps) {
             setEditing(null);
             setCreating(null);
           }}
+        />
+      ) : null}
+
+      {pickingIngredientsFor ? (
+        <MealIngredientsModal
+          meal={pickingIngredientsFor}
+          onAdd={(labels) => handleAddIngredients(pickingIngredientsFor, labels)}
+          onClose={() => setPickingIngredientsFor(null)}
         />
       ) : null}
     </div>

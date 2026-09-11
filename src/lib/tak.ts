@@ -216,46 +216,90 @@ export const recipeSchema = z.object({
 
 export type Recipe = z.infer<typeof recipeSchema>;
 
+const WIKI_USER_AGENT = "LesTakam/1.0 (application familiale, usage non commercial)";
+
 /**
- * Cherche une vraie photo du plat sur Wikimedia Commons (médiathèque libre
- * de droits, sans clé d'accès). Renvoie `null` sans lever d'erreur si rien
- * de pertinent n'est trouvé ou si le service est indisponible — la recette
- * reste utilisable sans image.
+ * Image de tête d'un article Wikipédia correspondant au plat — beaucoup
+ * plus fiable qu'une recherche libre sur Commons, car c'est l'image choisie
+ * par l'article pour illustrer précisément ce sujet.
+ */
+async function wikipediaThumbnail(plat: string, lang: "fr" | "en"): Promise<string | null> {
+  const searchUrl =
+    `https://${lang}.wikipedia.org/w/api.php?action=opensearch&format=json` +
+    `&search=${encodeURIComponent(plat)}&limit=1&namespace=0`;
+  const searchResponse = await fetch(searchUrl, {
+    headers: { "User-Agent": WIKI_USER_AGENT },
+    signal: AbortSignal.timeout(5000),
+  });
+  if (!searchResponse.ok) return null;
+
+  const searchData = (await searchResponse.json()) as [string, string[], string[], string[]];
+  const pageTitle = searchData?.[1]?.[0];
+  if (!pageTitle) return null;
+
+  const summaryUrl = `https://${lang}.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(
+    pageTitle.replace(/ /g, "_"),
+  )}`;
+  const summaryResponse = await fetch(summaryUrl, {
+    headers: { "User-Agent": WIKI_USER_AGENT },
+    signal: AbortSignal.timeout(5000),
+  });
+  if (!summaryResponse.ok) return null;
+
+  const summaryData = (await summaryResponse.json()) as {
+    thumbnail?: { source?: string };
+    originalimage?: { source?: string };
+  };
+  return summaryData.thumbnail?.source ?? summaryData.originalimage?.source ?? null;
+}
+
+/**
+ * Repli : recherche libre sur Wikimedia Commons. Moins fiable — un même mot
+ * peut faire remonter un scan de vieux livre de cuisine ou une photo sans
+ * rapport — donc on exige que le FICHIER lui-même (pas sa vignette dérivée,
+ * qui se termine toujours en .jpg même pour un PDF) soit une vraie image.
  */
 async function searchDishImage(searchTerm: string): Promise<string | null> {
   const query = encodeURIComponent(searchTerm);
   const url =
     `https://commons.wikimedia.org/w/api.php?action=query&format=json&origin=*` +
-    `&generator=search&gsrnamespace=6&gsrlimit=6&gsrsearch=${query}` +
+    `&generator=search&gsrnamespace=6&gsrlimit=8&gsrsearch=${query}` +
     `&prop=imageinfo&iiprop=url&iiurlwidth=800`;
 
   const response = await fetch(url, {
-    headers: { "User-Agent": "LesTakam/1.0 (application familiale, usage non commercial)" },
+    headers: { "User-Agent": WIKI_USER_AGENT },
     signal: AbortSignal.timeout(6000),
   });
   if (!response.ok) return null;
 
   const data = (await response.json()) as {
-    query?: { pages?: Record<string, { imageinfo?: { thumburl?: string; url?: string }[] }> };
+    query?: {
+      pages?: Record<string, { title?: string; imageinfo?: { thumburl?: string; url?: string }[] }>;
+    };
   };
   const pages = data.query?.pages;
   if (!pages) return null;
 
   for (const page of Object.values(pages)) {
+    const title = page.title ?? "";
+    // Le titre du fichier doit lui-même être une image — écarte les scans
+    // de livres (souvent suffixés « (IA xxxxx).pdf ») et autres documents.
+    if (!/\.(jpe?g|png)$/i.test(title)) continue;
     const info = page.imageinfo?.[0];
     const src = info?.thumburl ?? info?.url;
-    if (src && /\.(jpe?g|png)$/i.test(src)) return src;
+    if (src) return src;
   }
   return null;
 }
 
 export async function findDishImage(plat: string): Promise<string | null> {
   try {
-    // Les fichiers de Wikimedia Commons sont surtout titrés/décrits en
-    // anglais : chercher le nom du plat seul fonctionne mieux qu'en y
-    // ajoutant des mots génériques français (ex. « plat cuisine »), qui
-    // rétrécissent la recherche jusqu'à ne plus rien trouver.
-    return (await searchDishImage(plat)) ?? (await searchDishImage(`${plat} food`));
+    return (
+      (await wikipediaThumbnail(plat, "fr")) ??
+      (await wikipediaThumbnail(plat, "en")) ??
+      (await searchDishImage(plat)) ??
+      (await searchDishImage(`${plat} food`))
+    );
   } catch {
     return null;
   }

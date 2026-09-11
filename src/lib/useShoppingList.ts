@@ -37,6 +37,21 @@ export function useShoppingList() {
     [currentList, setStored],
   );
 
+  /**
+   * Ajoute plusieurs articles d'un coup (ex. les ingrédients sélectionnés
+   * d'une recette). Un seul appel à `setStored` : appeler `addItem` en
+   * boucle perdrait les premiers ajouts, chaque appel repartant de la même
+   * liste lue avant que le précédent ne soit pris en compte.
+   */
+  const addItems = useCallback(
+    (items: NewShoppingItem[]): ShoppingItem[] => {
+      const created = items.map((item) => ({ checked: false, ...item, id: newId() }));
+      setStored([...currentList(), ...created]);
+      return created;
+    },
+    [currentList, setStored],
+  );
+
   const updateItem = useCallback(
     (id: string, changes: Partial<NewShoppingItem>) => {
       setStored(currentList().map((item) => (item.id === id ? { ...item, ...changes } : item)));
@@ -67,5 +82,5 @@ export function useShoppingList() {
 
   const resetToDemo = useCallback(() => setStored(null), [setStored]);
 
-  return { items, addItem, updateItem, toggleItem, deleteItem, clearChecked, resetToDemo };
+  return { items, addItem, addItems, updateItem, toggleItem, deleteItem, clearChecked, resetToDemo };
 }
