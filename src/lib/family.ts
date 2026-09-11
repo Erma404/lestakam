@@ -42,7 +42,7 @@ export const MEMBERS: Member[] = [
     role: "enfant",
     avatarEmoji: "👧🏾",
     photoUrl: "/avatars/khloe.jpg",
-    accent: "sun",
+    accent: "lilac",
     warmthPreference: "frileux",
   },
 ];
