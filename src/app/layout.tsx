@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Nunito } from "next/font/google";
+import { Baloo_2, Nunito } from "next/font/google";
 import { AppShell } from "@/components/AppShell";
 import { SessionProvider } from "@/lib/supabase/session";
 import "./globals.css";
@@ -7,6 +7,15 @@ import "./globals.css";
 const nunito = Nunito({
   variable: "--font-body",
   subsets: ["latin"],
+  display: "swap",
+});
+
+// Titres joufflus et arrondis, pour donner à l'appli un vrai grain de fantaisie
+// plutôt que de tout empiler dans la même graisse de Nunito.
+const baloo = Baloo_2({
+  variable: "--font-display",
+  subsets: ["latin"],
+  weight: ["600", "700", "800"],
   display: "swap",
 });
 
@@ -36,7 +45,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="fr">
-      <body className={`${nunito.variable} antialiased`}>
+      <body className={`${nunito.variable} ${baloo.variable} antialiased`}>
         <SessionProvider>
           <AppShell>{children}</AppShell>
         </SessionProvider>

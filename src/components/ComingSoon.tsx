@@ -16,7 +16,7 @@ export function ComingSoon({ emoji, title, description, planned }: ComingSoonPro
         <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-ink-faint">
           En cours de construction
         </p>
-        <h1 className="text-3xl font-extrabold tracking-tight text-ink sm:text-4xl">
+        <h1 className="font-display text-3xl font-bold text-ink sm:text-4xl">
           {emoji} {title}
         </h1>
       </header>

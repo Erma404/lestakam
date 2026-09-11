@@ -61,14 +61,14 @@ export function RewardsBoard({ initialIso }: RewardsBoardProps) {
           <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-ink-faint">
             {khloe?.firstName ?? "Khloé"} · {formatLongDate(today)}
           </p>
-          <h1 className="text-3xl font-extrabold tracking-tight text-ink sm:text-4xl">
+          <h1 className="font-display text-3xl font-bold text-ink sm:text-4xl">
             ⭐ Récompenses
           </h1>
         </div>
         <button
           type="button"
           onClick={() => setCreating(true)}
-          className="inline-flex min-h-14 items-center gap-2 rounded-pill bg-sage px-6 text-base font-extrabold text-white hover:brightness-95"
+          className="inline-flex min-h-14 items-center gap-2 btn-pop btn-pop-sage px-6 text-base font-extrabold "
         >
           <span aria-hidden>＋</span> Objectif
         </button>
@@ -167,7 +167,7 @@ export function RewardsBoard({ initialIso }: RewardsBoardProps) {
               resetStars();
               setConfirmingReset(false);
             }}
-            className="min-h-9 rounded-pill bg-terracotta px-4 text-xs font-extrabold text-white"
+            className="min-h-9 btn-pop btn-pop-terracotta px-4 text-xs font-extrabold "
           >
             Oui, remettre à zéro
           </button>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { RecipeCard, type Recipe } from "./RecipeCard";
 import { useEvents } from "@/lib/useEvents";
 import { useMeals } from "@/lib/useMeals";
 import { useShoppingList } from "@/lib/useShoppingList";
@@ -24,14 +25,6 @@ interface HistoryEntry {
   heard: string;
   message: string;
   kind: "info" | "success" | "error";
-}
-
-interface Recipe {
-  plat: string;
-  ingredients: string[];
-  etapes: string[];
-  imageUrl: string | null;
-  youtubeUrl: string;
 }
 
 /** Reconnaissance vocale du navigateur, sans dépendance externe. */
@@ -283,7 +276,7 @@ export function TakWidget() {
                 className={`flex h-16 w-16 items-center justify-center rounded-full text-2xl transition-colors disabled:opacity-40 ${
                   listening
                     ? "bg-terracotta text-white animate-pulse"
-                    : "bg-sage text-white hover:brightness-95"
+                    : "bg-sage "
                 }`}
               >
                 🎙️
@@ -320,7 +313,7 @@ export function TakWidget() {
                 <button
                   type="submit"
                   disabled={loading || !draft.trim()}
-                  className="min-h-11 shrink-0 rounded-pill bg-sage px-4 text-sm font-extrabold text-white disabled:opacity-40"
+                  className="min-h-11 shrink-0 btn-pop btn-pop-sage px-4 text-sm font-extrabold text-white disabled:opacity-40"
                 >
                   Go
                 </button>
@@ -337,7 +330,7 @@ export function TakWidget() {
                   <button
                     type="button"
                     onClick={confirmPending}
-                    className="min-h-11 flex-1 rounded-pill bg-sage px-4 text-sm font-extrabold text-white hover:brightness-95"
+                    className="min-h-11 flex-1 btn-pop btn-pop-sage px-4 text-sm font-extrabold "
                   >
                     Confirmer
                   </button>
@@ -377,64 +370,5 @@ export function TakWidget() {
         </div>
       ) : null}
     </>
-  );
-}
-
-function RecipeCard({ recipe }: { recipe: Recipe }) {
-  return (
-    <div className="overflow-hidden rounded-card bg-white/80">
-      {recipe.imageUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element -- image externe (Wikimedia), domaine non prévisible
-        <img
-          src={recipe.imageUrl}
-          alt={recipe.plat}
-          className="h-36 w-full object-cover"
-        />
-      ) : (
-        <div className="flex h-24 items-center justify-center bg-sun-soft text-5xl" aria-hidden>
-          🍽️
-        </div>
-      )}
-      <div className="p-4">
-        <p className="mb-3 text-base font-extrabold text-ink">{recipe.plat}</p>
-
-        <p className="mb-1.5 text-[11px] font-bold uppercase tracking-[0.1em] text-ink-faint">
-          Ingrédients
-        </p>
-        <ul className="mb-3 flex flex-col gap-1">
-          {recipe.ingredients.map((ingredient, index) => (
-            <li key={index} className="flex items-start gap-2 text-sm font-semibold text-ink-soft">
-              <span aria-hidden>•</span>
-              {ingredient}
-            </li>
-          ))}
-        </ul>
-
-        <p className="mb-1.5 text-[11px] font-bold uppercase tracking-[0.1em] text-ink-faint">
-          Étapes
-        </p>
-        <ol className="mb-4 flex flex-col gap-1.5">
-          {recipe.etapes.map((etape, index) => (
-            <li key={index} className="flex items-start gap-2 text-sm font-semibold text-ink-soft">
-              <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-cream-deep text-[10px] font-extrabold text-ink">
-                {index + 1}
-              </span>
-              {etape}
-            </li>
-          ))}
-        </ol>
-
-        {recipe.youtubeUrl ? (
-          <a
-            href={recipe.youtubeUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex min-h-10 items-center gap-2 rounded-pill bg-terracotta px-4 text-xs font-extrabold text-white hover:brightness-95"
-          >
-            ▶️ Vidéos sur YouTube
-          </a>
-        ) : null}
-      </div>
-    </div>
   );
 }

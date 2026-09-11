@@ -54,7 +54,7 @@ export function RitualsBoard({ initialIso, childMode = false }: RitualsBoardProp
             <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-ink-faint">
               Rituels du jour
             </p>
-            <h1 className="text-3xl font-extrabold tracking-tight text-ink sm:text-4xl">
+            <h1 className="font-display text-3xl font-bold text-ink sm:text-4xl">
               Les journées de Khloé
             </h1>
             <p className="text-sm font-semibold text-ink-soft">{formatLongDate(today)}</p>

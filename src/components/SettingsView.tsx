@@ -47,7 +47,7 @@ export function SettingsView() {
         <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-ink-faint">
           La configuration du foyer
         </p>
-        <h1 className="text-3xl font-extrabold tracking-tight text-ink sm:text-4xl">
+        <h1 className="font-display text-3xl font-bold text-ink sm:text-4xl">
           ⚙️ Réglages
         </h1>
       </header>
@@ -124,7 +124,7 @@ export function SettingsView() {
                       setConfirming(null);
                       announce(`« ${reset.label} » a été remis à zéro.`);
                     }}
-                    className="min-h-9 rounded-pill bg-terracotta px-4 text-xs font-extrabold text-white"
+                    className="min-h-9 btn-pop btn-pop-terracotta px-4 text-xs font-extrabold "
                   >
                     Confirmer
                   </button>

@@ -32,7 +32,7 @@ export function ShoppingListView() {
           <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-ink-faint">
             {left === 0 ? "Tout est dans le caddie 🎉" : `${left} article${left > 1 ? "s" : ""} à prendre`}
           </p>
-          <h1 className="text-3xl font-extrabold tracking-tight text-ink sm:text-4xl">
+          <h1 className="font-display text-3xl font-bold text-ink sm:text-4xl">
             🛒 Liste de courses
           </h1>
         </div>
@@ -57,7 +57,7 @@ export function ShoppingListView() {
         />
         <button
           type="submit"
-          className="min-h-14 shrink-0 rounded-pill bg-sage px-5 text-base font-extrabold text-white hover:brightness-95"
+          className="min-h-14 shrink-0 btn-pop btn-pop-sage px-5 text-base font-extrabold "
         >
           ＋
         </button>

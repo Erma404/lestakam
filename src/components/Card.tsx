@@ -7,7 +7,7 @@ interface CardProps {
 export function Card({ children, className = "" }: CardProps) {
   return (
     <section
-      className={`rounded-card border border-line bg-white/80 p-5 shadow-[0_2px_12px_rgba(47,42,36,0.04)] sm:p-6 ${className}`}
+      className={`rounded-card border border-line bg-white/80 p-5 shadow-[0_3px_0_var(--color-line)] sm:p-6 ${className}`}
     >
       {children}
     </section>
@@ -29,7 +29,7 @@ export function CardTitle({ eyebrow, title, action }: CardTitleProps) {
             {eyebrow}
           </p>
         ) : null}
-        <h2 className="text-xl font-extrabold tracking-tight text-ink sm:text-2xl">{title}</h2>
+        <h2 className="font-display text-xl font-bold text-ink sm:text-2xl">{title}</h2>
       </div>
       {action}
     </header>

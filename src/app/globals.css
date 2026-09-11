@@ -46,6 +46,86 @@ button,
   touch-action: manipulation;
 }
 
+/* Titre joufflu — appliqué aux titres pour casser la monotonie du corps de
+   texte, plutôt que d'empiler toute l'appli dans la même graisse de Nunito. */
+.font-display {
+  font-family: var(--font-display), ui-rounded, "SF Pro Rounded", system-ui, sans-serif;
+  letter-spacing: -0.01em;
+}
+
+/* Bouton « pop » — un aplat de couleur avec un bord bas plus sombre qui
+   s'écrase au clic, façon jouet en plastique plutôt que rectangle plat. */
+.btn-pop {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4em;
+  border-radius: var(--radius-pill);
+  font-weight: 800;
+  color: white;
+  box-shadow: 0 4px 0 var(--btn-pop-shadow, rgba(0, 0, 0, 0.2));
+  transition: transform 0.12s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.12s ease,
+    filter 0.12s ease;
+}
+.btn-pop:hover:not(:disabled) {
+  filter: brightness(1.05);
+}
+.btn-pop:active:not(:disabled) {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 var(--btn-pop-shadow, rgba(0, 0, 0, 0.2));
+}
+.btn-pop:disabled {
+  box-shadow: none;
+}
+
+.btn-pop-sage {
+  background-color: var(--color-sage);
+  --btn-pop-shadow: color-mix(in oklch, var(--color-sage), black 28%);
+}
+.btn-pop-terracotta {
+  background-color: var(--color-terracotta);
+  --btn-pop-shadow: color-mix(in oklch, var(--color-terracotta), black 28%);
+}
+.btn-pop-sun {
+  background-color: var(--color-sun);
+  color: var(--color-ink);
+  --btn-pop-shadow: color-mix(in oklch, var(--color-sun), black 28%);
+}
+.btn-pop-lilac {
+  background-color: var(--color-lilac);
+  --btn-pop-shadow: color-mix(in oklch, var(--color-lilac), black 28%);
+}
+.btn-pop-ink {
+  background-color: var(--color-ink);
+  --btn-pop-shadow: color-mix(in oklch, var(--color-ink), black 28%);
+}
+
+/* Légère élévation au survol, pour les tuiles cliquables (membres,
+   jours de la semaine, objectifs…) — donne du relief sans surcharger. */
+.tile-pop {
+  transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.15s ease;
+}
+.tile-pop:hover {
+  transform: translateY(-3px);
+}
+
+@keyframes pop-in {
+  0% {
+    transform: scale(0.7);
+    opacity: 0;
+  }
+  70% {
+    transform: scale(1.06);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+.animate-pop-in {
+  animation: pop-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
 /* Masque les barres de défilement sur la tablette, le défilement reste actif */
 .scrollbar-soft::-webkit-scrollbar {
   height: 6px;

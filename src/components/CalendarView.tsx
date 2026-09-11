@@ -131,7 +131,7 @@ export function CalendarView({ initialIso }: CalendarViewProps) {
           <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-ink-faint">
             {view === "jour" ? "Vue par jour" : view === "mois" ? "Vue par mois" : "Vue par semaine"}
           </p>
-          <h1 className="text-3xl font-extrabold tracking-tight text-ink sm:text-4xl">
+          <h1 className="font-display text-3xl font-bold text-ink sm:text-4xl">
             {periodLabel}
           </h1>
         </div>
@@ -162,7 +162,7 @@ export function CalendarView({ initialIso }: CalendarViewProps) {
           <button
             type="button"
             onClick={() => setCreating({ date: view === "mois" ? today : anchor })}
-            className="ml-1 inline-flex min-h-11 items-center gap-1 rounded-pill bg-sage px-5 text-sm font-extrabold text-white hover:brightness-95"
+            className="ml-1 inline-flex min-h-11 items-center gap-1 btn-pop btn-pop-sage px-5 text-sm font-extrabold "
           >
             <span aria-hidden>＋</span> Ajouter
           </button>
@@ -445,7 +445,7 @@ function DayColumn({
 
   return (
     <div
-      className="relative border-l border-line"
+      className="relative flex-1 border-l border-line"
       style={{ height: GRID_HEIGHT, minWidth: DAY_COLUMN_MIN_WIDTH }}
       onClick={handleClick}
     >

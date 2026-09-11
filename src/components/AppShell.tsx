@@ -61,17 +61,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         aria-label="Navigation principale"
         className="hidden shrink-0 flex-col gap-1 border-r border-line bg-cream-deep/60 px-3 py-6 md:flex md:w-28 lg:w-36"
       >
-        <Link href="/" className="mb-4 block rounded-3xl px-2 py-1 text-center hover:bg-cream">
-          <span className="text-2xl" aria-hidden>
-            🏠
-          </span>
-          <p className="mt-1 text-sm font-extrabold leading-tight tracking-tight text-ink">
-            Hello
-            <br />
-            les Takam !
-          </p>
-        </Link>
-
         {NAV_ITEMS.map((item) => {
           const active = isActive(pathname, item.href);
           return (

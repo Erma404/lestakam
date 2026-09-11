@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { Card } from "./Card";
 import { MealForm } from "./MealForm";
+import { RecipeSearch } from "./RecipeSearch";
 import { MEAL_MOMENT_LABEL, MEAL_MOMENTS, mealFor, mealsForDay } from "@/lib/meals";
 import { useMeals, type NewMeal } from "@/lib/useMeals";
 import { useShoppingList } from "@/lib/useShoppingList";
@@ -68,7 +69,7 @@ export function MealsView({ initialIso }: MealsViewProps) {
         <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-ink-faint">
           Les 7 prochains jours
         </p>
-        <h1 className="text-3xl font-extrabold tracking-tight text-ink sm:text-4xl">
+        <h1 className="font-display text-3xl font-bold text-ink sm:text-4xl">
           🍽️ Repas
         </h1>
       </header>
@@ -78,6 +79,8 @@ export function MealsView({ initialIso }: MealsViewProps) {
           {confirmation}
         </p>
       ) : null}
+
+      <RecipeSearch />
 
       {week.map((date) => {
         const dayMeals = mealsForDay(meals, date);

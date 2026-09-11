@@ -165,7 +165,7 @@ export function SignInScreen() {
             <button
               type="submit"
               disabled={status === "verification"}
-              className="min-h-14 rounded-pill bg-sage px-6 text-base font-extrabold text-white hover:brightness-95 disabled:opacity-60"
+              className="min-h-14 btn-pop btn-pop-sage px-6 text-base font-extrabold  disabled:opacity-60"
             >
               {status === "verification" ? "Vérification…" : "Se connecter"}
             </button>
@@ -212,7 +212,7 @@ export function SignInScreen() {
             <button
               type="submit"
               disabled={status === "envoi"}
-              className="min-h-14 rounded-pill bg-sage px-6 text-base font-extrabold text-white hover:brightness-95 disabled:opacity-60"
+              className="min-h-14 btn-pop btn-pop-sage px-6 text-base font-extrabold  disabled:opacity-60"
             >
               {status === "envoi" ? "Envoi en cours…" : "Recevoir mon code de connexion"}
             </button>

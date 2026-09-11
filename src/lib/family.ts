@@ -120,7 +120,7 @@ export const RITUALS: Ritual[] = [
     emoji: "📵",
     moment: "apres-midi",
     time: "17:00",
-    stars: 2,
+    stars: 5,
     needsParentApproval: true,
   },
   {
@@ -160,7 +160,7 @@ export const RITUALS: Ritual[] = [
     emoji: "🌙",
     moment: "soir",
     time: "21:00",
-    stars: 2,
+    stars: 3,
     needsParentApproval: true,
   },
 ];

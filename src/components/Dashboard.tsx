@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { Avatar } from "./Avatar";
 import { Card, CardTitle } from "./Card";
@@ -177,21 +178,52 @@ export function Dashboard({ initialIso }: DashboardProps) {
 function DashboardHeader({ today, currentTime }: { today: string; currentTime: string }) {
   const longDate = formatLongDate(today);
   return (
-    <header className="flex flex-wrap items-end justify-between gap-2">
-      <div>
-        <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-ink-faint">
-          Aujourd&apos;hui
+    <header className="relative overflow-hidden rounded-card border border-line bg-gradient-to-br from-sun-soft via-cream to-sage-soft/70 p-5 shadow-[0_3px_0_var(--color-line)] sm:p-6">
+      {/* Touches décoratives, pour casser la carte plate — de simples ronds de couleur flous */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -right-10 -top-14 h-40 w-40 rounded-full bg-sky-soft/60 blur-xl"
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -bottom-16 left-1/3 h-36 w-36 rounded-full bg-rose-soft/50 blur-xl"
+      />
+
+      <Link href="/" className="relative flex flex-wrap items-center gap-4 sm:gap-5">
+        <Image
+          src="/famille-takam.jpg"
+          alt="La famille Takam : Stéphane, Ernestine et Khloé"
+          width={200}
+          height={221}
+          priority
+          className="h-16 w-16 shrink-0 rounded-full border-4 border-white object-cover shadow-md sm:h-24 sm:w-24"
+        />
+        <div className="min-w-0">
+          <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-ink-soft">
+            Bienvenue à la maison
+          </p>
+          <h1 className="font-display text-3xl font-bold tracking-tight text-ink sm:text-5xl">
+            Hello les Takam !
+          </h1>
+        </div>
+      </Link>
+
+      <div className="relative mt-4 flex flex-wrap items-end justify-between gap-2 border-t border-white/70 pt-4">
+        <div>
+          <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-ink-faint">
+            Aujourd&apos;hui
+          </p>
+          <p className="text-xl font-extrabold tracking-tight text-ink sm:text-2xl">
+            {longDate.charAt(0).toUpperCase() + longDate.slice(1)}
+          </p>
+        </div>
+        <p
+          data-testid="horloge"
+          className="rounded-pill bg-white/80 px-4 py-1.5 text-lg font-extrabold text-ink-soft"
+        >
+          {currentTime}
         </p>
-        <h1 className="text-3xl font-extrabold tracking-tight text-ink sm:text-4xl">
-          {longDate.charAt(0).toUpperCase() + longDate.slice(1)}
-        </h1>
       </div>
-      <p
-        data-testid="horloge"
-        className="rounded-pill bg-white/80 px-4 py-1.5 text-lg font-extrabold text-ink-soft"
-      >
-        {currentTime}
-      </p>
     </header>
   );
 }
@@ -432,7 +464,7 @@ function DaySection({
             <button
               type="button"
               onClick={onAddEvent}
-              className="inline-flex min-h-11 items-center gap-1 rounded-pill bg-sage px-4 text-xs font-extrabold text-white hover:brightness-95"
+              className="inline-flex min-h-11 items-center gap-1 btn-pop btn-pop-sage px-4 text-xs font-extrabold "
             >
               <span aria-hidden>＋</span> Ajouter
             </button>

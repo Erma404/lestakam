@@ -124,7 +124,7 @@ export function ShoppingItemForm({ item, onSave, onDelete, onClose }: ShoppingIt
           <div className="flex flex-wrap gap-3 pt-1">
             <button
               type="submit"
-              className="min-h-14 flex-1 rounded-pill bg-sage px-6 text-base font-extrabold text-white hover:brightness-95"
+              className="min-h-14 flex-1 btn-pop btn-pop-sage px-6 text-base font-extrabold "
             >
               Enregistrer
             </button>
@@ -147,7 +147,7 @@ export function ShoppingItemForm({ item, onSave, onDelete, onClose }: ShoppingIt
                   <button
                     type="button"
                     onClick={onDelete}
-                    className="min-h-11 rounded-pill bg-terracotta px-5 text-sm font-extrabold text-white"
+                    className="min-h-11 btn-pop btn-pop-terracotta px-5 text-sm font-extrabold "
                   >
                     Oui, retirer
                   </button>
