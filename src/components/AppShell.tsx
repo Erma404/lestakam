@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { SignInScreen } from "./SignInScreen";
@@ -36,6 +37,17 @@ function isActive(pathname: string, href: string): boolean {
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { configured, loading, session } = useSession();
+  const [moreOpen, setMoreOpen] = useState(false);
+
+  // Change de page : referme le tiroir « Plus » plutôt que de le laisser
+  // ouvert par-dessus l'écran suivant (cliquer un lien du tiroir le ferme
+  // déjà explicitement ; ceci couvre aussi une navigation par ailleurs,
+  // ex. le bouton précédent du téléphone).
+  const [pathnameAtOpen, setPathnameAtOpen] = useState(pathname);
+  if (pathname !== pathnameAtOpen) {
+    setPathnameAtOpen(pathname);
+    if (moreOpen) setMoreOpen(false);
+  }
 
   if (PUBLIC_PATHS.includes(pathname)) {
     return <>{children}</>;
@@ -112,9 +124,95 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </Link>
           );
         })}
+        <button
+          type="button"
+          onClick={() => setMoreOpen(true)}
+          aria-expanded={moreOpen}
+          aria-label="Plus de pages : Repas, Recettes, Listes, Réglages"
+          className={`flex min-w-16 flex-col items-center gap-0.5 rounded-2xl px-3 py-2 text-[11px] font-bold ${
+            SECONDARY_ITEMS.some((item) => isActive(pathname, item.href))
+              ? "bg-sage-soft text-ink"
+              : "text-ink-soft"
+          }`}
+        >
+          <span className="text-xl" aria-hidden>
+            ⋯
+          </span>
+          Plus
+        </button>
       </nav>
 
+      {moreOpen ? <MoreSheet pathname={pathname} onClose={() => setMoreOpen(false)} /> : null}
+
       <TakWidget />
+    </div>
+  );
+}
+
+const SECONDARY_ITEMS = NAV_ITEMS.filter((item) => item.secondary);
+
+/**
+ * Tiroir mobile pour les pages qui n'ont pas leur place dans la barre du
+ * bas (5 entrées maximum) : Repas, Recettes, Listes, Réglages restent
+ * sinon injoignables sur téléphone, la barre latérale qui les liste étant
+ * réservée à la tablette et à l'ordinateur.
+ */
+function MoreSheet({ pathname, onClose }: { pathname: string; onClose: () => void }) {
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [onClose]);
+
+  return (
+    <div
+      role="presentation"
+      className="fixed inset-0 z-30 flex items-end bg-ink/30 backdrop-blur-sm md:hidden"
+      onClick={(clickEvent) => {
+        if (clickEvent.target === clickEvent.currentTarget) onClose();
+      }}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Autres pages"
+        className="w-full rounded-t-card bg-cream p-5 pb-8 shadow-2xl"
+      >
+        <div className="mb-4 flex items-center justify-between">
+          <p className="text-sm font-extrabold text-ink">Plus</p>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Fermer"
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-lg font-bold text-ink-soft"
+          >
+            ✕
+          </button>
+        </div>
+        <div className="grid grid-cols-4 gap-3">
+          {SECONDARY_ITEMS.map((item) => {
+            const active = isActive(pathname, item.href);
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={onClose}
+                aria-current={active ? "page" : undefined}
+                className={`flex flex-col items-center gap-1.5 rounded-3xl px-2 py-4 text-xs font-bold ${
+                  active ? "bg-sage-soft text-ink" : "bg-white text-ink-soft"
+                }`}
+              >
+                <span className="text-2xl" aria-hidden>
+                  {item.emoji}
+                </span>
+                {item.label}
+              </Link>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 }
