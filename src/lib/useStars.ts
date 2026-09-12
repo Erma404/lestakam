@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useId, useState } from "react";
 import { useStoredState } from "./localStore";
 import { useHouseholdShared } from "./supabase/household";
 import { getSupabaseClient } from "./supabase/client";
@@ -44,6 +44,10 @@ export function useStars() {
   const { shared, khloe } = useHouseholdShared();
   const [localEntries, setLocalEntries] = useStoredState<StarEntry[]>(STORAGE_KEY, EMPTY);
   const [sharedEntries, setSharedEntries] = useState<StarEntry[] | null>(null);
+  // useStars() est appelé par plusieurs composants à la fois (Tak, la page
+  // Rituels, celle des Récompenses…) : un identifiant propre à chaque appel
+  // évite que leurs canaux Supabase ne portent le même nom.
+  const instanceId = useId();
 
   useEffect(() => {
     if (!shared || !khloe) return;
@@ -65,7 +69,7 @@ export function useStars() {
 
     load();
     const channel = supabase
-      .channel(`ritual-status-stars-${khloe.household_id}`)
+      .channel(`ritual-status-stars-${khloe.household_id}-${instanceId}`)
       .on(
         "postgres_changes",
         {
@@ -82,7 +86,7 @@ export function useStars() {
       cancelled = true;
       void supabase.removeChannel(channel);
     };
-  }, [shared, khloe]);
+  }, [shared, khloe, instanceId]);
 
   const entries = shared ? (sharedEntries ?? EMPTY) : localEntries;
 

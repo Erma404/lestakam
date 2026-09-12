@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useId, useState } from "react";
 import { useStoredState } from "./localStore";
 import { useStars } from "./useStars";
 import { useHouseholdShared } from "./supabase/household";
@@ -29,6 +29,10 @@ export function useRitualStatus(today: string) {
   );
   const [sharedStatuses, setSharedStatuses] = useState<RitualStatusMap | null>(null);
   const { total: starsEarned, logStar, unlogStar } = useStars();
+  // Tak (monté sur toutes les pages) et la page Rituels peuvent utiliser ce
+  // hook en même temps : un identifiant propre à chaque appel évite que
+  // leurs canaux Supabase ne portent le même nom.
+  const instanceId = useId();
 
   useEffect(() => {
     if (!shared || !khloe) return;
@@ -52,7 +56,7 @@ export function useRitualStatus(today: string) {
 
     load();
     const channel = supabase
-      .channel(`ritual-status-${khloe.household_id}-${today}`)
+      .channel(`ritual-status-${khloe.household_id}-${today}-${instanceId}`)
       .on(
         "postgres_changes",
         {
@@ -69,7 +73,7 @@ export function useRitualStatus(today: string) {
       cancelled = true;
       void supabase.removeChannel(channel);
     };
-  }, [shared, khloe, today]);
+  }, [shared, khloe, today, instanceId]);
 
   const statuses = shared ? (sharedStatuses ?? EMPTY_STATUSES) : localStatuses;
 

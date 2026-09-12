@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useId, useState } from "react";
 import { useStoredState } from "./localStore";
 import { useHouseholdShared } from "./supabase/household";
 import { getSupabaseClient } from "./supabase/client";
@@ -41,6 +41,10 @@ export function useRewardGoals() {
   const { shared, khloe } = useHouseholdShared();
   const [localStored, setLocalStored] = useStoredState<RewardGoal[] | null>(STORAGE_KEY, null);
   const [rows, setRows] = useState<RewardGoalRow[] | null>(null);
+  // Un identifiant propre à chaque appel de ce hook, pour que deux
+  // composants montés en même temps n'ouvrent pas un canal Supabase du
+  // même nom (voir useRituals / useStars / useRitualStatus).
+  const instanceId = useId();
 
   useEffect(() => {
     if (!shared || !khloe) return;
@@ -60,7 +64,7 @@ export function useRewardGoals() {
 
     load();
     const channel = supabase
-      .channel(`reward-goals-${khloe.household_id}`)
+      .channel(`reward-goals-${khloe.household_id}-${instanceId}`)
       .on(
         "postgres_changes",
         {
@@ -77,7 +81,7 @@ export function useRewardGoals() {
       cancelled = true;
       void supabase.removeChannel(channel);
     };
-  }, [shared, khloe]);
+  }, [shared, khloe, instanceId]);
 
   const localGoals = localStored ?? REWARD_GOALS;
   const goals = shared ? (rows ? rows.map(rowToGoal) : []) : localGoals;

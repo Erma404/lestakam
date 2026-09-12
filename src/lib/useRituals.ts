@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { useHouseholdShared } from "./supabase/household";
 import { getSupabaseClient } from "./supabase/client";
 import { RITUALS as LOCAL_RITUALS } from "./family";
@@ -32,6 +32,10 @@ function rowToRitual(row: RitualRow): Ritual {
 export function useRituals() {
   const { shared, khloe } = useHouseholdShared();
   const [rows, setRows] = useState<RitualRow[] | null>(null);
+  // Plusieurs composants (Tak, la page Rituels…) peuvent utiliser ce hook
+  // en même temps : un identifiant propre à chaque appel évite que leurs
+  // canaux Supabase ne portent le même nom et ne se marchent dessus.
+  const instanceId = useId();
 
   useEffect(() => {
     if (!shared || !khloe) return;
@@ -52,7 +56,7 @@ export function useRituals() {
 
     load();
     const channel = supabase
-      .channel(`rituals-${khloe.household_id}`)
+      .channel(`rituals-${khloe.household_id}-${instanceId}`)
       .on(
         "postgres_changes",
         {
@@ -69,7 +73,7 @@ export function useRituals() {
       cancelled = true;
       void supabase.removeChannel(channel);
     };
-  }, [shared, khloe]);
+  }, [shared, khloe, instanceId]);
 
   const rituals = shared ? (rows ? rows.map(rowToRitual) : []) : LOCAL_KHLOE_RITUALS;
 
