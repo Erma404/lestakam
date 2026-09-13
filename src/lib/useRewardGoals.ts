@@ -91,14 +91,23 @@ export function useRewardGoals() {
       if (shared && khloe) {
         const supabase = getSupabaseClient();
         if (!supabase) return;
-        void supabase.from("reward_goals").insert({
-          household_id: khloe.household_id,
-          member_id: khloe.id,
-          label: goal.label,
-          emoji: goal.emoji,
-          stars_required: goal.starsRequired,
-          sort_order: rows?.length ?? 0,
-        });
+        // Un constructeur de requête Supabase ne part sur le réseau que si on
+        // consomme sa promesse (.then/.catch/await) : un simple `void` devant
+        // construit l'objet sans jamais l'envoyer, et l'écriture disparaît en
+        // silence (aucune erreur, aucune requête réseau, rien).
+        supabase
+          .from("reward_goals")
+          .insert({
+            household_id: khloe.household_id,
+            member_id: khloe.id,
+            label: goal.label,
+            emoji: goal.emoji,
+            stars_required: goal.starsRequired,
+            sort_order: rows?.length ?? 0,
+          })
+          .then(({ error }) => {
+            if (error) console.error("Ajout de l'objectif impossible :", error);
+          });
         return;
       }
       const created: RewardGoal = { ...goal, id: newId() };
@@ -116,7 +125,13 @@ export function useRewardGoals() {
         if (changes.label !== undefined) patch.label = changes.label;
         if (changes.emoji !== undefined) patch.emoji = changes.emoji;
         if (changes.starsRequired !== undefined) patch.stars_required = changes.starsRequired;
-        void supabase.from("reward_goals").update(patch).eq("id", id);
+        supabase
+          .from("reward_goals")
+          .update(patch)
+          .eq("id", id)
+          .then(({ error }) => {
+            if (error) console.error("Modification de l'objectif impossible :", error);
+          });
         return;
       }
       setLocalStored(localGoals.map((goal) => (goal.id === id ? { ...goal, ...changes } : goal)));
@@ -129,7 +144,13 @@ export function useRewardGoals() {
       if (shared) {
         const supabase = getSupabaseClient();
         if (!supabase) return;
-        void supabase.from("reward_goals").delete().eq("id", id);
+        supabase
+          .from("reward_goals")
+          .delete()
+          .eq("id", id)
+          .then(({ error }) => {
+            if (error) console.error("Suppression de l'objectif impossible :", error);
+          });
         return;
       }
       setLocalStored(localGoals.filter((goal) => goal.id !== id));
@@ -145,7 +166,14 @@ export function useRewardGoals() {
         if (!supabase) return;
         // `is` plutôt que d'écraser : si deux appareils le détectent au même
         // moment, seul le premier passage compte.
-        void supabase.from("reward_goals").update({ achieved_on: date }).eq("id", id).is("achieved_on", null);
+        supabase
+          .from("reward_goals")
+          .update({ achieved_on: date })
+          .eq("id", id)
+          .is("achieved_on", null)
+          .then(({ error }) => {
+            if (error) console.error("Enregistrement de l'objectif débloqué impossible :", error);
+          });
         return;
       }
       setLocalStored(

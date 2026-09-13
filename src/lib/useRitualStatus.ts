@@ -81,17 +81,26 @@ export function useRitualStatus(today: string) {
     (ritualId: string, state: "coche" | "valide") => {
       const supabase = getSupabaseClient();
       if (!supabase || !khloe) return;
-      void supabase.from("ritual_status").upsert(
-        {
-          household_id: khloe.household_id,
-          ritual_id: ritualId,
-          status_date: today,
-          state,
-          approved_by: state === "valide" ? (actingMember?.id ?? null) : null,
-          approved_at: state === "valide" ? new Date().toISOString() : null,
-        },
-        { onConflict: "ritual_id,status_date" },
-      );
+      // Un constructeur de requête Supabase ne part sur le réseau que si on
+      // consomme sa promesse (.then/.catch/await) : un simple `void` devant
+      // construit l'objet sans jamais l'envoyer, et l'écriture disparaît en
+      // silence (aucune erreur, aucune requête réseau, rien).
+      supabase
+        .from("ritual_status")
+        .upsert(
+          {
+            household_id: khloe.household_id,
+            ritual_id: ritualId,
+            status_date: today,
+            state,
+            approved_by: state === "valide" ? (actingMember?.id ?? null) : null,
+            approved_at: state === "valide" ? new Date().toISOString() : null,
+          },
+          { onConflict: "ritual_id,status_date" },
+        )
+        .then(({ error }) => {
+          if (error) console.error("Écriture du rituel impossible :", error);
+        });
     },
     [khloe, today, actingMember],
   );
@@ -100,12 +109,15 @@ export function useRitualStatus(today: string) {
     (ritualId: string) => {
       const supabase = getSupabaseClient();
       if (!supabase || !khloe) return;
-      void supabase
+      supabase
         .from("ritual_status")
         .delete()
         .eq("household_id", khloe.household_id)
         .eq("ritual_id", ritualId)
-        .eq("status_date", today);
+        .eq("status_date", today)
+        .then(({ error }) => {
+          if (error) console.error("Suppression du rituel impossible :", error);
+        });
     },
     [khloe, today],
   );
