@@ -57,6 +57,8 @@ export type RitualRow = {
   needs_parent_approval: boolean;
   active: boolean;
   sort_order: number;
+  /** Jours où le rituel s'applique (0 = dimanche … 6 = samedi). NULL = tous les jours. */
+  days: number[] | null;
   created_at: string;
 };
 

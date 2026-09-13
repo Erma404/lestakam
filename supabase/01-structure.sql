@@ -103,6 +103,9 @@ create table if not exists rituals (
   needs_parent_approval boolean not null default true,
   active boolean not null default true,
   sort_order integer not null default 0,
+  -- Jours où le rituel s'applique (0 = dimanche … 6 = samedi). NULL = tous
+  -- les jours, ex. week-end seulement : '{0,6}'.
+  days smallint[],
   created_at timestamptz not null default now()
 );
 

@@ -70,7 +70,7 @@ export function TakWidget() {
   const { addEvent } = useEvents();
   const { addMeal } = useMeals();
   const { addItem } = useShoppingList();
-  const { rituals } = useRituals();
+  const { rituals } = useRituals(today);
   const { markValidated } = useRitualStatus(today);
 
   const [open, setOpen] = useState(false);

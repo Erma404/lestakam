@@ -31,7 +31,7 @@ export function RitualsBoard({ initialIso, childMode = false }: RitualsBoardProp
   const currentSlot = currentMoment(now);
 
   const khloe = memberById("khloe");
-  const { rituals } = useRituals();
+  const { rituals } = useRituals(today);
   const { statuses, starsEarned, toggle: toggleChecked, approve } = useRitualStatus(today);
   const { goals } = useRewardGoals();
 

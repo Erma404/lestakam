@@ -36,6 +36,11 @@ export function nextSevenDays(from: string): string[] {
   return Array.from({ length: 7 }, (_, index) => addDays(from, index));
 }
 
+/** Jour de la semaine pour une date AAAA-MM-JJ (0 = dimanche … 6 = samedi). */
+export function weekdayNumber(key: string): number {
+  return fromDateKey(key).getDay();
+}
+
 /** Premier jour (lundi) de la semaine contenant cette date. */
 export function startOfWeek(date: string): string {
   const weekday = fromDateKey(date).getDay(); // 0 = dimanche

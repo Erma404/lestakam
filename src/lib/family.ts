@@ -95,6 +95,8 @@ export const RITUALS: Ritual[] = [
     time: "08:00",
     stars: 1,
     needsParentApproval: false,
+    // Pas d'école le week-end, pas de cartable à préparer.
+    days: [1, 2, 3, 4, 5],
   },
   {
     id: "aprem-gouter",
@@ -125,6 +127,18 @@ export const RITUALS: Ritual[] = [
     time: "17:00",
     stars: 5,
     needsParentApproval: true,
+  },
+  {
+    id: "weekend-lecture",
+    memberId: "khloe",
+    label: "Pause lecture (15 min)",
+    emoji: "📚",
+    moment: "apres-midi",
+    time: "15:00",
+    stars: 1,
+    needsParentApproval: false,
+    // Seulement le week-end, quand Khloé est à la maison.
+    days: [0, 6],
   },
   {
     id: "soir-douche",

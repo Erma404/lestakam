@@ -34,6 +34,11 @@ export interface Ritual {
   stars: number;
   /** Un parent doit confirmer avant que les étoiles comptent. */
   needsParentApproval: boolean;
+  /**
+   * Jours où le rituel s'applique (0 = dimanche … 6 = samedi). Tous les
+   * jours si absent — ex. week-end seulement : [0, 6].
+   */
+  days?: number[];
 }
 
 export type RitualState = "a-faire" | "coche" | "valide";

@@ -4,6 +4,7 @@ import { useEffect, useId, useState } from "react";
 import { useHouseholdShared } from "./supabase/household";
 import { getSupabaseClient } from "./supabase/client";
 import { RITUALS as LOCAL_RITUALS } from "./family";
+import { weekdayNumber } from "./dates";
 import type { Ritual } from "./types";
 import type { RitualRow } from "./supabase/database.types";
 
@@ -19,17 +20,24 @@ function rowToRitual(row: RitualRow): Ritual {
     time: row.scheduled_time?.slice(0, 5) ?? undefined,
     stars: row.stars,
     needsParentApproval: row.needs_parent_approval,
+    days: row.days ?? undefined,
   };
 }
 
+/** Un rituel sans jours précisés s'applique tous les jours. */
+function appliesOn(ritual: Ritual, weekday: number): boolean {
+  return !ritual.days || ritual.days.includes(weekday);
+}
+
 /**
- * Les rituels quotidiens de Khloé.
+ * Les rituels de Khloé prévus pour le jour donné (AAAA-MM-JJ) — certains,
+ * comme le cartable, ne s'appliquent qu'en semaine ou qu'au week-end.
  *
  * Une fois la base connectée et le foyer créé, ils viennent de la table
  * `rituals` — partagés entre tous les appareils — plutôt que de la liste
  * figée du code, qui ne sert plus qu'en mode local.
  */
-export function useRituals() {
+export function useRituals(today: string) {
   const { shared, khloe } = useHouseholdShared();
   const [rows, setRows] = useState<RitualRow[] | null>(null);
   // Plusieurs composants (Tak, la page Rituels…) peuvent utiliser ce hook
@@ -75,7 +83,9 @@ export function useRituals() {
     };
   }, [shared, khloe, instanceId]);
 
-  const rituals = shared ? (rows ? rows.map(rowToRitual) : []) : LOCAL_KHLOE_RITUALS;
+  const allRituals = shared ? (rows ? rows.map(rowToRitual) : []) : LOCAL_KHLOE_RITUALS;
+  const weekday = weekdayNumber(today);
+  const rituals = allRituals.filter((ritual) => appliesOn(ritual, weekday));
 
   return { rituals, shared: shared && rows !== null };
 }
