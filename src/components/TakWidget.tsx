@@ -253,6 +253,7 @@ export function TakWidget() {
           category: action.categorie,
           memberIds: action.personnes,
           repeatsWeekly: action.repeteChaqueSemaine,
+          skipSchoolHolidays: action.horsVacancesScolaires,
           notes: action.note,
         });
         return true;

@@ -40,6 +40,7 @@ export function EventForm({
   const [category, setCategory] = useState<EventCategory>(event?.category ?? "activite");
   const [memberIds, setMemberIds] = useState<MemberId[]>(event?.memberIds ?? []);
   const [repeatsWeekly, setRepeatsWeekly] = useState(event?.repeatsWeekly ?? false);
+  const [skipSchoolHolidays, setSkipSchoolHolidays] = useState(event?.skipSchoolHolidays ?? false);
   const [notes, setNotes] = useState(event?.notes ?? "");
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -92,6 +93,7 @@ export function EventForm({
       category,
       memberIds,
       repeatsWeekly,
+      skipSchoolHolidays: repeatsWeekly && skipSchoolHolidays ? true : undefined,
       notes: notes.trim() || undefined,
     });
   }
@@ -235,6 +237,23 @@ export function EventForm({
               </span>
             </span>
           </label>
+
+          {repeatsWeekly ? (
+            <label className="flex min-h-14 items-center gap-3 rounded-card border border-line bg-white px-4 py-3">
+              <input
+                type="checkbox"
+                checked={skipSchoolHolidays}
+                onChange={(changeEvent) => setSkipSchoolHolidays(changeEvent.target.checked)}
+                className="h-6 w-6 shrink-0 accent-[#7fa87f]"
+              />
+              <span className="text-sm font-bold text-ink">
+                Sauf vacances scolaires et jours fériés
+                <span className="block text-xs font-semibold text-ink-faint">
+                  Zone C : l&apos;activité disparaît du calendrier pendant les vacances.
+                </span>
+              </span>
+            </label>
+          ) : null}
 
           <Field label="Note (optionnel)">
             <textarea

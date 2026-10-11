@@ -521,7 +521,11 @@ function EventRow({ event, onEdit }: { event: CalendarEvent; onEdit: () => void 
           <p className="text-xs font-semibold break-words text-ink-soft">
             {CATEGORY_LABEL[event.category]}
             {event.location ? ` · ${event.location}` : ""}
-            {event.repeatsWeekly ? " · chaque semaine" : ""}
+            {event.repeatsWeekly
+              ? event.skipSchoolHolidays
+                ? " · chaque semaine hors vacances"
+                : " · chaque semaine"
+              : ""}
           </p>
         </div>
         <div className="flex -space-x-2">

@@ -1,10 +1,12 @@
 import type { CalendarEvent, MemberId } from "./types";
 import { addDays, fromDateKey } from "./dates";
+import { isSchoolBreak } from "./schoolHolidays";
 
 /**
  * Développe les événements récurrents sur une fenêtre de dates.
  * Un événement hebdomadaire réapparaît chaque semaine le même jour,
- * à partir de sa date d'origine.
+ * à partir de sa date d'origine — sauf pendant les vacances scolaires et
+ * les jours fériés s'il est marqué « hors vacances ».
  */
 export function expandEvents(events: CalendarEvent[], windowDays: string[]): CalendarEvent[] {
   const expanded: CalendarEvent[] = [];
@@ -21,6 +23,7 @@ export function expandEvents(events: CalendarEvent[], windowDays: string[]): Cal
       if (target < origin) continue;
       const daysApart = Math.round((target - origin) / 86_400_000);
       if (daysApart % 7 === 0) {
+        if (event.skipSchoolHolidays && isSchoolBreak(day)) continue;
         expanded.push({ ...event, id: `${event.id}@${day}`, date: day });
       }
     }

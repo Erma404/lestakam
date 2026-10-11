@@ -180,3 +180,40 @@ describe("layoutOverlapping", () => {
     expect(c?.column).toBe(0);
   });
 });
+
+describe("expandEvents hors vacances scolaires", () => {
+  const natation: CalendarEvent = {
+    id: "natation",
+    title: "Natation",
+    date: "2026-10-10",
+    startTime: "18:00",
+    endTime: "19:00",
+    category: "activite",
+    memberIds: ["khloe"],
+    repeatsWeekly: true,
+    skipSchoolHolidays: true,
+  };
+
+  it("saute les samedis des vacances de la Toussaint", () => {
+    const days = ["2026-10-10", "2026-10-17", "2026-10-24", "2026-10-31", "2026-11-07"];
+    expect(expandEvents([natation], days).map((event) => event.date)).toEqual([
+      "2026-10-10",
+      "2026-11-07",
+    ]);
+  });
+
+  it("saute les samedis fériés de mai", () => {
+    const days = ["2027-04-24", "2027-05-01", "2027-05-08", "2027-05-15"];
+    expect(expandEvents([natation], days).map((event) => event.date)).toEqual([
+      "2027-04-24",
+      "2027-05-15",
+    ]);
+  });
+
+  it("garde les vacances pour un événement hebdomadaire ordinaire", () => {
+    const days = ["2026-10-17", "2026-10-24"];
+    expect(
+      expandEvents([{ ...natation, skipSchoolHolidays: false }], days).map((event) => event.date),
+    ).toEqual(["2026-10-17", "2026-10-24"]);
+  });
+});

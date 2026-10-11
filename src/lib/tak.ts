@@ -20,6 +20,7 @@ export const addEventSchema = z.object({
   categorie: z.enum(categoryValues),
   personnes: z.array(z.enum(memberIds)).min(1),
   repeteChaqueSemaine: z.boolean().optional(),
+  horsVacancesScolaires: z.boolean().optional(),
   note: z.string().optional(),
 });
 
@@ -94,6 +95,10 @@ export const takModelActionSchema = z.object({
   categorie: z.enum(categoryValues).nullable().describe("Catégorie, pour un événement"),
   personnes: z.array(z.enum(memberIds)).nullable().describe("Personnes concernées, pour un événement"),
   repeteChaqueSemaine: z.boolean().nullable(),
+  horsVacancesScolaires: z
+    .boolean()
+    .nullable()
+    .describe("Avec repeteChaqueSemaine : sauter les vacances scolaires et jours fériés"),
   note: z.string().nullable(),
   moment: z.enum(["midi", "soir"]).nullable().describe("Moment du repas"),
   label: z.string().nullable().describe("Nom d'UN article, pour la liste de courses"),
@@ -141,6 +146,8 @@ export function toTakAction(raw: TakModelAction): TakAction {
         categorie: raw.categorie,
         personnes: raw.personnes,
         repeteChaqueSemaine: raw.repeteChaqueSemaine || undefined,
+        horsVacancesScolaires:
+          (raw.repeteChaqueSemaine && raw.horsVacancesScolaires) || undefined,
         note: raw.note || undefined,
       };
     }
@@ -207,7 +214,12 @@ export function describeTakAction(action: TakAction, rituals: TakRitual[] = []):
   switch (action.action) {
     case "ajouter_evenement": {
       const heure = action.heureDebut ? ` à ${action.heureDebut}` : "";
-      return `Ajouter « ${action.titre} » le ${action.date}${heure}, pour ${joinNames(action.personnes)}.`;
+      const repetition = action.repeteChaqueSemaine
+        ? action.horsVacancesScolaires
+          ? ", chaque semaine hors vacances scolaires"
+          : ", chaque semaine"
+        : "";
+      return `Ajouter « ${action.titre} » le ${action.date}${heure}${repetition}, pour ${joinNames(action.personnes)}.`;
     }
     case "planifier_repas":
       return `Planifier « ${action.titre} » le ${action.date} (${action.moment}).`;
@@ -373,6 +385,13 @@ Ce que tu sais faire :
    - "chercher_recette" : on demande une recette ou comment préparer un plat.
    Tu peux combiner : ex. « planifie des lasagnes demain soir et ajoute ce qu'il faut » = un repas
    + un article par ingrédient manquant.
+
+Pour une activité régulière « hors vacances scolaires » (natation, danse…), mets
+repeteChaqueSemaine et horsVacancesScolaires à true : l'application connaît les vacances de la
+zone C et les jours fériés. "date" est alors la première séance à venir.
+
+Ne propose une action que si la phrase la demande ou l'implique clairement : pour une simple
+question ou une demande d'idée, réponds sans action, et propose d'ajouter si c'est utile.
 
 Tu ne peux pas supprimer ni modifier ce qui existe : dis-le gentiment et indique où le faire dans
 l'application (Calendrier, Repas, Listes, Rituels, Récompenses).
