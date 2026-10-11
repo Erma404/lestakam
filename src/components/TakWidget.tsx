@@ -7,26 +7,44 @@ import { useMeals } from "@/lib/useMeals";
 import { useShoppingList } from "@/lib/useShoppingList";
 import { useRituals } from "@/lib/useRituals";
 import { useRitualStatus } from "@/lib/useRitualStatus";
-import { formatLongDate, todayKey } from "@/lib/dates";
-import type { TakAction } from "@/lib/tak";
+import { useStars } from "@/lib/useStars";
+import { useRewardGoals } from "@/lib/useRewardGoals";
+import { useWeather } from "@/lib/useWeather";
+import { currentTime, formatLongDate, todayKey } from "@/lib/dates";
+import { buildTakContext } from "@/lib/takContext";
+import type { TakAction, TakRitual, TakTurn } from "@/lib/tak";
+
+interface ProposedAction {
+  action: TakAction;
+  summary: string;
+}
 
 interface TakResponse {
   ok: boolean;
-  action?: TakAction;
-  summary?: string;
-  ingredients?: string[];
-  etapes?: string[];
-  imageUrl?: string | null;
-  youtubeUrl?: string;
+  reponse?: string;
+  actions?: ProposedAction[];
+  recipe?: Recipe;
   error?: string;
 }
 
-interface HistoryEntry {
+interface ChatMessage {
   id: string;
-  heard: string;
-  message: string;
-  kind: "info" | "success" | "error";
+  role: "user" | "assistant";
+  text: string;
+  kind?: "error";
+  /** Actions proposées par Tak, en attente de confirmation. */
+  proposed?: ProposedAction[];
+  /** Ce que sont devenues ces actions, une fois la décision prise. */
+  outcome?: "confirmed" | "cancelled";
+  recipe?: Recipe;
 }
+
+const SUGGESTIONS = [
+  "Qu'est-ce qu'on a de prévu ce week-end ?",
+  "Ajoute du lait, des œufs et du pain",
+  "Une idée de sortie avec Khloé s'il fait beau ?",
+  "Combien d'étoiles il manque à Khloé ?",
+];
 
 /** Reconnaissance vocale du navigateur, sans dépendance externe. */
 function getSpeechRecognition(): (new () => SpeechRecognitionLike) | null {
@@ -55,7 +73,7 @@ interface SpeechRecognitionEventLike {
   results: ArrayLike<ArrayLike<{ transcript: string }> & { isFinal: boolean }>;
 }
 
-function newHistoryId(): string {
+function newMessageId(): string {
   return `tak-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
@@ -67,24 +85,24 @@ function newHistoryId(): string {
 export function TakWidget() {
   const today = todayKey();
 
-  const { addEvent } = useEvents();
-  const { addMeal } = useMeals();
-  const { addItem } = useShoppingList();
+  const { events, addEvent } = useEvents();
+  const { meals, addMeal } = useMeals();
+  const { items: shoppingItems, addItem } = useShoppingList();
   const { rituals } = useRituals(today);
-  const { markValidated } = useRitualStatus(today);
+  const { statuses, markValidated } = useRitualStatus(today);
+  const { entries: starEntries } = useStars();
+  const { goals } = useRewardGoals();
+  const { forecast } = useWeather();
 
   const [open, setOpen] = useState(false);
   const [supported, setSupported] = useState(true);
   const [listening, setListening] = useState(false);
   const [draft, setDraft] = useState("");
   const [loading, setLoading] = useState(false);
-  const [pending, setPending] = useState<{ action: TakAction; summary: string; heard: string } | null>(
-    null,
-  );
-  const [recipe, setRecipe] = useState<Recipe | null>(null);
-  const [history, setHistory] = useState<HistoryEntry[]>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
 
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const timer = window.setTimeout(() => setSupported(getSpeechRecognition() !== null), 0);
@@ -100,60 +118,93 @@ export function TakWidget() {
     return () => document.removeEventListener("keydown", onKeyDown);
   }, [open]);
 
-  function pushHistory(heard: string, message: string, kind: HistoryEntry["kind"]) {
-    setHistory((current) => [{ id: newHistoryId(), heard, message, kind }, ...current].slice(0, 5));
-  }
+  // Le dernier message reste visible, comme dans une messagerie.
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+  }, [messages, loading, open]);
 
   const ask = useCallback(
     async (text: string) => {
       const trimmed = text.trim();
-      if (!trimmed) return;
+      if (!trimmed || loading) return;
 
+      const history: TakTurn[] = messages
+        .filter((message) => message.kind !== "error")
+        .map((message) => ({ role: message.role, content: message.text }));
+      const takRituals: TakRitual[] = rituals.map((ritual) => ({
+        id: ritual.id,
+        label: ritual.label,
+        moment: ritual.moment,
+        done: statuses[ritual.id] === "valide",
+      }));
+      const context = buildTakContext({
+        today,
+        events,
+        meals,
+        shoppingItems,
+        starEntries,
+        goals,
+        forecast,
+      });
+
+      setMessages((current) => [...current, { id: newMessageId(), role: "user", text: trimmed }]);
+      setDraft("");
       setLoading(true);
-      setPending(null);
-      setRecipe(null);
       try {
         const response = await fetch("/api/tak", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text: trimmed, today, weekday: formatLongDate(today) }),
+          body: JSON.stringify({
+            text: trimmed,
+            today,
+            weekday: formatLongDate(today),
+            time: currentTime(),
+            context,
+            rituals: takRituals,
+            history,
+          }),
         });
         const data = (await response.json()) as TakResponse;
 
-        if (!data.ok || !data.action) {
-          pushHistory(trimmed, data.error ?? "Je n'ai pas compris cette demande.", "error");
-          setDraft("");
+        if (!data.ok || !data.reponse) {
+          setMessages((current) => [
+            ...current,
+            {
+              id: newMessageId(),
+              role: "assistant",
+              text: data.error ?? "Je n'ai pas compris cette demande.",
+              kind: "error",
+            },
+          ]);
           return;
         }
 
-        if (data.action.action === "incompris") {
-          pushHistory(trimmed, data.action.raison, "info");
-          setDraft("");
-          return;
-        }
-
-        if (data.action.action === "chercher_recette" && data.ingredients && data.etapes) {
-          setRecipe({
-            plat: data.action.plat,
-            ingredients: data.ingredients,
-            etapes: data.etapes,
-            imageUrl: data.imageUrl ?? null,
-            youtubeUrl: data.youtubeUrl ?? "",
-          });
-          pushHistory(trimmed, data.summary ?? "Recette trouvée.", "success");
-          setDraft("");
-          return;
-        }
-
-        setPending({ action: data.action, summary: data.summary ?? "", heard: trimmed });
+        const reply = data.reponse;
+        setMessages((current) => [
+          ...current,
+          {
+            id: newMessageId(),
+            role: "assistant",
+            text: reply,
+            proposed: data.actions && data.actions.length > 0 ? data.actions : undefined,
+            recipe: data.recipe,
+          },
+        ]);
       } catch {
-        pushHistory(trimmed, "Tak n'a pas pu joindre le serveur.", "error");
-        setDraft("");
+        setMessages((current) => [
+          ...current,
+          {
+            id: newMessageId(),
+            role: "assistant",
+            text: "Tak n'a pas pu joindre le serveur.",
+            kind: "error",
+          },
+        ]);
       } finally {
         setLoading(false);
       }
     },
-    [today],
+    [loading, messages, rituals, statuses, today, events, meals, shoppingItems, starEntries, goals, forecast],
   );
 
   function toggleListening() {
@@ -190,10 +241,7 @@ export function TakWidget() {
     recognition.start();
   }
 
-  function confirmPending() {
-    if (!pending) return;
-    const { action } = pending;
-
+  function runAction(action: TakAction): boolean {
     switch (action.action) {
       case "ajouter_evenement":
         addEvent({
@@ -207,33 +255,53 @@ export function TakWidget() {
           repeatsWeekly: action.repeteChaqueSemaine,
           notes: action.note,
         });
-        pushHistory(pending.heard, `« ${action.titre} » a été ajouté au calendrier.`, "success");
-        break;
+        return true;
       case "planifier_repas":
         addMeal({ title: action.titre, date: action.date, moment: action.moment, emoji: "🍽️" });
-        pushHistory(pending.heard, `« ${action.titre} » a été ajouté au menu.`, "success");
-        break;
+        return true;
       case "ajouter_article":
         addItem({ label: action.label, quantity: action.quantite, aisle: action.rayon });
-        pushHistory(pending.heard, `« ${action.label} » a été ajouté à la liste de courses.`, "success");
-        break;
-      case "valider_rituel": {
-        const ok = markValidated(action.ritualId, rituals);
-        pushHistory(
-          pending.heard,
-          ok ? "Rituel validé, bravo Khloé ! ⭐" : "Ce rituel n'a pas été retrouvé.",
-          ok ? "success" : "error",
-        );
-        break;
-      }
+        return true;
+      case "valider_rituel":
+        return markValidated(action.ritualId, rituals);
+      default:
+        return false;
     }
-    setPending(null);
-    setDraft("");
   }
 
-  function cancelPending() {
-    setPending(null);
-    setDraft("");
+  function decide(messageId: string, confirmed: boolean) {
+    const message = messages.find((item) => item.id === messageId);
+    if (!message?.proposed || message.outcome) return;
+    let failed = 0;
+    if (confirmed) {
+      for (const { action } of message.proposed) {
+        if (!runAction(action)) failed += 1;
+      }
+    }
+    setMessages((current) => {
+      const next = current.map((item) =>
+        item.id === messageId ? { ...item, outcome: confirmed ? ("confirmed" as const) : ("cancelled" as const) } : item,
+      );
+      if (failed > 0) {
+        next.push({
+          id: newMessageId(),
+          role: "assistant",
+          text: "Je n'ai pas pu tout faire : un rituel n'a pas été retrouvé.",
+          kind: "error",
+        });
+      }
+      return next;
+    });
+  }
+
+  function removeProposed(messageId: string, index: number) {
+    setMessages((current) =>
+      current.map((item) => {
+        if (item.id !== messageId || !item.proposed) return item;
+        const proposed = item.proposed.filter((_, position) => position !== index);
+        return proposed.length > 0 ? { ...item, proposed } : { ...item, proposed, outcome: "cancelled" as const };
+      }),
+    );
   }
 
   return (
@@ -254,7 +322,7 @@ export function TakWidget() {
         <div
           role="dialog"
           aria-label="Tak, l'assistant de la famille"
-          className="fixed inset-x-0 bottom-0 z-40 flex max-h-[85vh] flex-col overflow-hidden rounded-t-card bg-cream shadow-2xl sm:inset-x-auto sm:bottom-24 sm:right-6 sm:w-96 sm:rounded-card"
+          className="fixed inset-x-0 bottom-0 z-40 flex h-[85vh] flex-col overflow-hidden rounded-t-card bg-cream shadow-2xl sm:inset-x-auto sm:bottom-24 sm:right-6 sm:h-[70vh] sm:w-[26rem] sm:rounded-card"
         >
           <header className="flex items-center gap-3 border-b border-line bg-sun-soft px-5 py-4">
             <span className="text-3xl" aria-hidden>
@@ -263,9 +331,18 @@ export function TakWidget() {
             <div className="min-w-0 flex-1">
               <h2 className="text-lg font-extrabold tracking-tight text-ink">Salut, c&apos;est Tak !</h2>
               <p className="truncate text-xs font-semibold text-ink-soft">
-                Dis-moi ce qu&apos;il faut faire, je m&apos;en occupe.
+                Pose-moi une question ou demande-moi un coup de main.
               </p>
             </div>
+            {messages.length > 0 ? (
+              <button
+                type="button"
+                onClick={() => setMessages([])}
+                className="min-h-10 shrink-0 rounded-pill bg-white/80 px-3 text-xs font-bold text-ink-soft hover:bg-white"
+              >
+                Nouvelle discussion
+              </button>
+            ) : null}
             <button
               type="button"
               onClick={() => setOpen(false)}
@@ -276,107 +353,133 @@ export function TakWidget() {
             </button>
           </header>
 
-          <div className="flex flex-1 flex-col gap-4 overflow-y-auto p-4">
-            <div className="flex flex-col items-center gap-3 rounded-card bg-white/70 p-4 text-center">
-              <button
-                type="button"
-                onClick={toggleListening}
-                disabled={!supported || loading}
-                aria-pressed={listening}
-                className={`flex h-16 w-16 items-center justify-center rounded-full text-2xl transition-colors disabled:opacity-40 ${
-                  listening
-                    ? "bg-terracotta text-white animate-pulse"
-                    : "bg-sage "
-                }`}
-              >
-                🎙️
-              </button>
-              <p className="text-xs font-bold text-ink-soft">
-                {!supported
-                  ? "Micro non disponible ici — écris ta demande."
-                  : loading
-                    ? "Tak réfléchit…"
-                    : listening
-                      ? "Je t'écoute…"
-                      : "Appuie et parle, ou écris ci-dessous."}
-              </p>
-              {draft ? (
-                <p className="rounded-3xl bg-cream-deep px-3 py-1.5 text-xs font-semibold text-ink">
-                  « {draft} »
-                </p>
-              ) : null}
-
-              <form
-                onSubmit={(formEvent) => {
-                  formEvent.preventDefault();
-                  void ask(draft);
-                }}
-                className="flex w-full gap-2"
-              >
-                <input
-                  type="text"
-                  value={draft}
-                  onChange={(changeEvent) => setDraft(changeEvent.target.value)}
-                  placeholder="Ajoute du lait à la liste…"
-                  className="min-h-11 w-full flex-1 rounded-pill border border-line bg-white px-4 text-sm font-semibold text-ink outline-none placeholder:text-ink-faint focus:border-sage focus:ring-2 focus:ring-sage-soft"
-                />
-                <button
-                  type="submit"
-                  disabled={loading || !draft.trim()}
-                  className="min-h-11 shrink-0 btn-pop btn-pop-sage px-4 text-sm font-extrabold text-white disabled:opacity-40"
-                >
-                  Go
-                </button>
-              </form>
-            </div>
-
-            {pending ? (
-              <div className="rounded-card border-2 border-sage bg-sage-soft/40 p-4">
-                <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.1em] text-ink-faint">
-                  Tak a compris
-                </p>
-                <p className="mb-3 text-sm font-extrabold text-ink">{pending.summary}</p>
-                <div className="flex gap-2">
+          <div ref={scrollRef} className="flex flex-1 flex-col gap-3 overflow-y-auto p-4" aria-live="polite">
+            {messages.length === 0 ? (
+              <div className="flex flex-col gap-2">
+                <p className="text-xs font-bold uppercase tracking-[0.1em] text-ink-faint">Par exemple</p>
+                {SUGGESTIONS.map((suggestion) => (
                   <button
+                    key={suggestion}
                     type="button"
-                    onClick={confirmPending}
-                    className="min-h-11 flex-1 btn-pop btn-pop-sage px-4 text-sm font-extrabold "
+                    onClick={() => void ask(suggestion)}
+                    className="min-h-11 rounded-3xl bg-white px-4 py-2 text-left text-sm font-semibold text-ink hover:bg-cream-deep"
                   >
-                    Confirmer
+                    « {suggestion} »
                   </button>
-                  <button
-                    type="button"
-                    onClick={cancelPending}
-                    className="min-h-11 rounded-pill bg-white px-4 text-sm font-extrabold text-ink-soft hover:bg-cream-deep"
-                  >
-                    Annuler
-                  </button>
-                </div>
+                ))}
               </div>
             ) : null}
 
-            {recipe ? <RecipeCard recipe={recipe} /> : null}
-
-            {history.length > 0 ? (
-              <ul className="flex flex-col gap-2">
-                {history.map((entry) => (
-                  <li
-                    key={entry.id}
-                    className={`rounded-3xl px-3 py-2 text-xs font-semibold ${
-                      entry.kind === "success"
-                        ? "bg-sage-soft text-ink"
-                        : entry.kind === "error"
-                          ? "bg-rose-soft text-ink"
-                          : "bg-cream-deep text-ink-soft"
+            {messages.map((message) =>
+              message.role === "user" ? (
+                <p
+                  key={message.id}
+                  className="ml-8 self-end whitespace-pre-line rounded-3xl rounded-br-md bg-sage px-4 py-2 text-sm font-semibold text-white"
+                >
+                  {message.text}
+                </p>
+              ) : (
+                <div key={message.id} className="mr-6 flex flex-col gap-2 self-start">
+                  <p
+                    className={`whitespace-pre-line rounded-3xl rounded-bl-md px-4 py-2 text-sm font-semibold text-ink ${
+                      message.kind === "error" ? "bg-rose-soft" : "bg-white"
                     }`}
                   >
-                    <span className="block text-[10px] font-bold text-ink-faint">« {entry.heard} »</span>
-                    {entry.message}
-                  </li>
-                ))}
-              </ul>
+                    {message.text}
+                  </p>
+
+                  {message.proposed && message.proposed.length > 0 ? (
+                    <div className="rounded-card border-2 border-sage bg-sage-soft/40 p-3">
+                      <ul className="mb-3 flex flex-col gap-1.5">
+                        {message.proposed.map((item, index) => (
+                          <li key={index} className="flex items-start gap-2 text-sm font-bold text-ink">
+                            <span className="flex-1">{item.summary}</span>
+                            {!message.outcome && message.proposed!.length > 1 ? (
+                              <button
+                                type="button"
+                                onClick={() => removeProposed(message.id, index)}
+                                aria-label={`Retirer : ${item.summary}`}
+                                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/80 text-xs text-ink-soft hover:bg-white"
+                              >
+                                ✕
+                              </button>
+                            ) : null}
+                          </li>
+                        ))}
+                      </ul>
+                      {message.outcome === "confirmed" ? (
+                        <p className="text-xs font-extrabold text-sage">✓ C&apos;est fait.</p>
+                      ) : message.outcome === "cancelled" ? (
+                        <p className="text-xs font-bold text-ink-faint">Annulé.</p>
+                      ) : (
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => decide(message.id, true)}
+                            className="min-h-11 flex-1 btn-pop btn-pop-sage px-4 text-sm font-extrabold"
+                          >
+                            {message.proposed.length > 1 ? "Tout confirmer" : "Confirmer"}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => decide(message.id, false)}
+                            className="min-h-11 rounded-pill bg-white px-4 text-sm font-extrabold text-ink-soft hover:bg-cream-deep"
+                          >
+                            Annuler
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  ) : null}
+
+                  {message.recipe ? <RecipeCard recipe={message.recipe} /> : null}
+                </div>
+              ),
+            )}
+
+            {loading ? (
+              <p className="self-start rounded-3xl rounded-bl-md bg-white px-4 py-2 text-sm font-semibold text-ink-faint">
+                Tak réfléchit…
+              </p>
             ) : null}
           </div>
+
+          <form
+            onSubmit={(formEvent) => {
+              formEvent.preventDefault();
+              void ask(draft);
+            }}
+            className="flex items-center gap-2 border-t border-line bg-white/70 p-3"
+          >
+            <button
+              type="button"
+              onClick={toggleListening}
+              disabled={!supported || loading}
+              aria-pressed={listening}
+              aria-label={listening ? "Arrêter l'écoute" : "Parler à Tak"}
+              title={supported ? undefined : "Micro non disponible sur ce navigateur"}
+              className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-xl transition-colors disabled:opacity-40 ${
+                listening ? "animate-pulse bg-terracotta text-white" : "bg-sage-soft"
+              }`}
+            >
+              🎙️
+            </button>
+            <input
+              type="text"
+              value={draft}
+              onChange={(changeEvent) => setDraft(changeEvent.target.value)}
+              placeholder={listening ? "Je t'écoute…" : "Écris à Tak…"}
+              aria-label="Message pour Tak"
+              className="min-h-11 w-full flex-1 rounded-pill border border-line bg-white px-4 text-sm font-semibold text-ink outline-none placeholder:text-ink-faint focus:border-sage focus:ring-2 focus:ring-sage-soft"
+            />
+            <button
+              type="submit"
+              disabled={loading || !draft.trim()}
+              className="min-h-11 shrink-0 btn-pop btn-pop-sage px-4 text-sm font-extrabold text-white disabled:opacity-40"
+            >
+              Envoyer
+            </button>
+          </form>
         </div>
       ) : null}
     </>

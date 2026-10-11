@@ -81,6 +81,10 @@ export function useRitualStatus(today: string) {
     (ritualId: string, state: "coche" | "valide") => {
       const supabase = getSupabaseClient();
       if (!supabase || !khloe) return;
+      // Affichage immédiat, sans attendre l'aller-retour avec la base :
+      // sinon un deuxième appui rapide repart de l'ancien état et le
+      // rituel semble réagir au hasard.
+      setSharedStatuses((current) => ({ ...(current ?? EMPTY_STATUSES), [ritualId]: state }));
       // Un constructeur de requête Supabase ne part sur le réseau que si on
       // consomme sa promesse (.then/.catch/await) : un simple `void` devant
       // construit l'objet sans jamais l'envoyer, et l'écriture disparaît en
@@ -109,6 +113,11 @@ export function useRitualStatus(today: string) {
     (ritualId: string) => {
       const supabase = getSupabaseClient();
       if (!supabase || !khloe) return;
+      setSharedStatuses((current) => {
+        const next = { ...(current ?? EMPTY_STATUSES) };
+        delete next[ritualId];
+        return next;
+      });
       supabase
         .from("ritual_status")
         .delete()
@@ -164,6 +173,23 @@ export function useRitualStatus(today: string) {
   );
 
   /**
+   * Un seul geste sur la carte du rituel : pas fait → validé, validé → annulé.
+   * Un rituel resté « à valider » (coché avant ce changement, ou par Tak) est
+   * validé au premier appui.
+   */
+  const tap = useCallback(
+    (ritual: Ritual) => {
+      const state = statuses[ritual.id];
+      if (state === "valide") {
+        toggle(ritual);
+      } else {
+        approve(ritual);
+      }
+    },
+    [statuses, toggle, approve],
+  );
+
+  /**
    * Valide directement un rituel par son identifiant, sans passer par l'état
    * intermédiaire « à valider ». Utilisé par Tak : dire qu'un rituel est fait
    * équivaut à ce qu'un parent le confirme lui-même. `ritualsList` doit venir
@@ -188,5 +214,5 @@ export function useRitualStatus(today: string) {
     [statuses, shared, writeStatus, setLocalStatuses, logStar, today],
   );
 
-  return { statuses, starsEarned, toggle, approve, markValidated, shared };
+  return { statuses, starsEarned, toggle, approve, tap, markValidated, shared };
 }

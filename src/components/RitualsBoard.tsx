@@ -32,7 +32,7 @@ export function RitualsBoard({ initialIso, childMode = false }: RitualsBoardProp
 
   const khloe = memberById("khloe");
   const { rituals } = useRituals(today);
-  const { statuses, starsEarned, toggle: toggleChecked, approve } = useRitualStatus(today);
+  const { statuses, starsEarned, tap } = useRitualStatus(today);
   const { goals } = useRewardGoals();
 
   const starsToday = rituals
@@ -109,8 +109,15 @@ export function RitualsBoard({ initialIso, childMode = false }: RitualsBoardProp
                 const approved = state === "valide";
                 return (
                   <li key={ritual.id}>
-                    <div
-                      className={`flex items-center gap-3 rounded-card border px-4 py-3 transition-colors ${
+                    {/* Toute la carte est la zone d'appui : un geste, un résultat. */}
+                    <button
+                      type="button"
+                      onClick={() => tap(ritual)}
+                      aria-pressed={approved}
+                      aria-label={`${ritual.label} : ${
+                        approved ? "fait, appuyer pour annuler" : "appuyer pour valider"
+                      }`}
+                      className={`flex min-h-16 w-full touch-manipulation select-none items-center gap-3 rounded-card border px-4 py-3 text-left transition-[background-color,border-color,transform] duration-150 active:scale-[0.98] ${
                         approved
                           ? "border-sage bg-sage-soft"
                           : checked
@@ -118,50 +125,30 @@ export function RitualsBoard({ initialIso, childMode = false }: RitualsBoardProp
                             : "border-line bg-white"
                       }`}
                     >
-                      <button
-                        type="button"
-                        onClick={() => toggleChecked(ritual)}
-                        aria-pressed={checked}
-                        className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                      <span className="text-3xl" aria-hidden>
+                        {ritual.emoji}
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-base font-extrabold text-ink">
+                          {ritual.label}
+                        </span>
+                        <span className="block text-xs font-semibold text-ink-soft">
+                          {ritual.time ? `${ritual.time} · ` : ""}
+                          {ritual.stars} ⭐
+                          {approved ? " · bravo !" : checked ? " · à valider" : ""}
+                        </span>
+                      </span>
+                      <span
+                        aria-hidden
+                        className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 text-xl font-extrabold transition-colors ${
+                          approved
+                            ? "animate-pop-in border-sage bg-sage text-white"
+                            : "border-line bg-cream-deep text-transparent"
+                        }`}
                       >
-                        <span className="text-3xl" aria-hidden>
-                          {ritual.emoji}
-                        </span>
-                        <span className="min-w-0">
-                          <span className="block truncate text-base font-extrabold text-ink">
-                            {ritual.label}
-                          </span>
-                          <span className="block text-xs font-semibold text-ink-soft">
-                            {ritual.time ? `${ritual.time} · ` : ""}
-                            {ritual.stars} ⭐
-                            {approved
-                              ? " · validé"
-                              : checked
-                                ? " · en attente d'un parent"
-                                : ""}
-                          </span>
-                        </span>
-                      </button>
-
-                      {checked && !approved && !childMode ? (
-                        <button
-                          type="button"
-                          onClick={() => approve(ritual)}
-                          className="inline-flex min-h-11 shrink-0 items-center rounded-pill bg-sage px-4 text-xs font-extrabold text-white"
-                        >
-                          Valider
-                        </button>
-                      ) : (
-                        <span
-                          aria-hidden
-                          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-lg ${
-                            approved ? "bg-sage text-white" : "bg-cream-deep text-ink-faint"
-                          }`}
-                        >
-                          {approved ? "✓" : checked ? "⏳" : ""}
-                        </span>
-                      )}
-                    </div>
+                        ✓
+                      </span>
+                    </button>
                   </li>
                 );
               })}

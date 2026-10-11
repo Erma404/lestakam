@@ -24,14 +24,16 @@ export interface OutfitSuggestion {
 /**
  * Température à habiller, décalée selon la préférence du membre.
  *
- * On s'habille pour le moment le plus frais de la sortie — le matin, le
- * plus souvent — jamais pour la chaleur de l'après-midi : mieux vaut une
- * couche à enlever qu'un enfant qui a froid en sortant.
+ * On vise la température du milieu de matinée, quand on est dehors
+ * (environ 40 % du chemin entre la minimale de l'aube et la maximale de
+ * l'après-midi), et non la minimale seule : celle-ci tombe vers 6 h et
+ * faisait proposer un manteau un jour à 20°. Les écarts marqués sont
+ * couverts par la couche amovible ajoutée plus bas.
  */
 function perceivedTemperature(day: WeatherDay, member: Member): number {
-  const base = day.minTemp;
-  if (member.warmthPreference === "frileux") return base - 3;
-  if (member.warmthPreference === "chaud") return base + 2;
+  const base = day.minTemp + (day.maxTemp - day.minTemp) * 0.4;
+  if (member.warmthPreference === "frileux") return base - 1;
+  if (member.warmthPreference === "chaud") return base + 1;
   return base;
 }
 
@@ -85,11 +87,11 @@ export function suggestOutfit(member: Member, day: WeatherDay): OutfitSuggestion
   }
 
   let headline: string;
-  if (temperature >= 26) headline = "Chaud dès le matin, on reste léger";
-  else if (temperature >= 20) headline = "Doux dès le matin";
-  else if (temperature >= 14) headline = "Frais le matin, une petite couche en plus";
-  else if (temperature >= 8) headline = "Fraîcheur le matin, on couvre bien";
-  else headline = "Froid le matin, on sort bien couvert";
+  if (temperature >= 26) headline = "Chaud, on reste léger";
+  else if (temperature >= 20) headline = "Doux, tenue légère";
+  else if (temperature >= 14) headline = "Frais, une petite couche en plus";
+  else if (temperature >= 8) headline = "Fraîcheur, on couvre bien";
+  else headline = "Froid, on sort bien couvert";
 
   if (wet) headline += " · pensez à la pluie";
 

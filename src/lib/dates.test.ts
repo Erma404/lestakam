@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   addDays,
   currentMoment,
+  outfitDay,
   formatDateRangeMonth,
   formatDayNumber,
   formatLongDate,
@@ -142,5 +143,21 @@ describe("currentMoment", () => {
     expect(currentMoment(new Date("2026-09-11T06:00:00Z"))).toBe("matin");
     expect(currentMoment(new Date("2026-09-11T13:00:00Z"))).toBe("apres-midi");
     expect(currentMoment(new Date("2026-09-11T19:00:00Z"))).toBe("soir");
+  });
+});
+
+describe("outfitDay", () => {
+  // Heures de Paris en octobre (UTC+2).
+  it("propose la tenue du jour en journée", () => {
+    expect(outfitDay(new Date("2026-10-11T16:59:00Z"))).toBe("2026-10-11");
+  });
+
+  it("propose la tenue du lendemain dès 19 h", () => {
+    expect(outfitDay(new Date("2026-10-11T17:00:00Z"))).toBe("2026-10-12");
+  });
+
+  it("revient à la tenue du jour au passage de minuit", () => {
+    expect(outfitDay(new Date("2026-10-11T22:05:00Z"))).toBe("2026-10-12");
+    expect(outfitDay(new Date("2026-10-12T04:00:00Z"))).toBe("2026-10-12");
   });
 });

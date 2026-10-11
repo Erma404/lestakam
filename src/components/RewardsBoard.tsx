@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Card, CardTitle } from "./Card";
 import { ProgressBar } from "./RitualsBoard";
 import { RewardGoalForm } from "./RewardGoalForm";
 import { memberById } from "@/lib/family";
 import { useStars } from "@/lib/useStars";
 import { useRewardGoals } from "@/lib/useRewardGoals";
-import { achievedGoals, goalsToUnlock, nextGoal, starsThisMonth, starsThisWeek } from "@/lib/rewards";
+import { achievedGoals, nextGoal, starsThisMonth, starsThisWeek } from "@/lib/rewards";
 import { formatLongDate, todayKey } from "@/lib/dates";
 import { useNow } from "@/lib/useNow";
 import type { RewardGoal } from "@/lib/types";
@@ -21,34 +21,11 @@ export function RewardsBoard({ initialIso }: RewardsBoardProps) {
   const today = todayKey(now);
 
   const { entries, total, resetToDemo: resetStars, shared: starsShared } = useStars();
-  const { goals, addGoal, updateGoal, deleteGoal, markAchieved } = useRewardGoals();
+  const { goals, addGoal, updateGoal, deleteGoal } = useRewardGoals();
 
   const [editing, setEditing] = useState<RewardGoal | null>(null);
   const [creating, setCreating] = useState(false);
-  const [unlocked, setUnlocked] = useState<string | null>(null);
   const [confirmingReset, setConfirmingReset] = useState(false);
-
-  // Débloque automatiquement tout objectif dont le seuil vient d'être atteint.
-  useEffect(() => {
-    const toUnlock = goalsToUnlock(goals, total);
-    if (toUnlock.length === 0) return;
-    for (const goal of toUnlock) {
-      markAchieved(goal.id, today);
-    }
-    // Décalé d'un tick : on notifie le système externe (le stockage des
-    // objectifs) depuis le corps de l'effet, et on ne met à jour l'état
-    // local du bandeau que depuis un callback, une fois cela fait.
-    const label = toUnlock[0].label;
-    const showTimer = window.setTimeout(() => setUnlocked(label), 0);
-    const hideTimer = window.setTimeout(() => setUnlocked(null), 5000);
-    return () => {
-      window.clearTimeout(showTimer);
-      window.clearTimeout(hideTimer);
-    };
-    // `goals` change à chaque rendu tant que `markAchieved` n'a pas encore écrit :
-    // seul le total d'étoiles doit déclencher cette vérification.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [total]);
 
   const upcoming = nextGoal(goals);
   const unlockedGoals = achievedGoals(goals);
@@ -73,12 +50,6 @@ export function RewardsBoard({ initialIso }: RewardsBoardProps) {
           <span aria-hidden>＋</span> Objectif
         </button>
       </header>
-
-      {unlocked ? (
-        <p role="status" className="rounded-card bg-sun-soft px-5 py-3 text-sm font-bold text-ink">
-          🎉 Nouvelle récompense débloquée : {unlocked} !
-        </p>
-      ) : null}
 
       <div className="grid grid-cols-3 gap-3">
         <Counter label="Cette semaine" value={starsThisWeek(entries, today)} />

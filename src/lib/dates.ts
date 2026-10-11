@@ -165,6 +165,18 @@ function hourInHomeTimezone(now: Date): number {
   return Number(hourPart);
 }
 
+/** À partir de cette heure, la tenue proposée est celle du lendemain. */
+export const OUTFIT_TOMORROW_FROM_HOUR = 19;
+
+/**
+ * Jour pour lequel proposer une tenue : celle de demain dès 19 h, pour
+ * préparer les habits la veille au soir ; celle du jour à partir de minuit.
+ */
+export function outfitDay(now: Date = new Date()): string {
+  const today = todayKey(now);
+  return hourInHomeTimezone(now) >= OUTFIT_TOMORROW_FROM_HOUR ? addDays(today, 1) : today;
+}
+
 /** Moment de la journée déduit de l'heure, pour mettre en avant les bons rituels. */
 export function currentMoment(now: Date = new Date()): "matin" | "apres-midi" | "soir" {
   const hour = hourInHomeTimezone(now);

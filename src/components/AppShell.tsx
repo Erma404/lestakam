@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { SignInScreen } from "./SignInScreen";
 import { TakWidget } from "./TakWidget";
+import { RewardCelebration } from "./RewardCelebration";
 import { useSession } from "@/lib/supabase/session";
 
 interface NavItem {
@@ -145,6 +146,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       {moreOpen ? <MoreSheet pathname={pathname} onClose={() => setMoreOpen(false)} /> : null}
 
       <TakWidget />
+      <RewardCelebration />
     </div>
   );
 }

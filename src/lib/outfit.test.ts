@@ -24,7 +24,7 @@ function labels(member: Member, weather: WeatherDay): string[] {
 
 describe("suggestOutfit", () => {
   it("propose une tenue légère quand il fait chaud dès le matin", () => {
-    // Khloé est frileuse : sa température ressentie est décalée de -3°.
+    // Khloé est frileuse : sa température ressentie est décalée de -1°.
     const outfit = suggestOutfit(khloe, day({ maxTemp: 32, minTemp: 29 }));
     expect(outfit.headline).toContain("Chaud");
     expect(outfit.layers.map((l) => l.label)).toContain("Short ou robe légère");
@@ -36,14 +36,19 @@ describe("suggestOutfit", () => {
     );
   });
 
-  it("s'habille pour la fraîcheur du matin même si l'après-midi est doux", () => {
-    // Exactement le cas signalé : 13° le matin, une après-midi bien plus douce.
-    // Un t-shirt ne suffit pas, même si la journée se réchauffe.
-    const outfit = suggestOutfit(khloe, day({ minTemp: 13, maxTemp: 24 }));
+  it("ne propose pas de manteau un jour doux, même frais au lever", () => {
+    // Le cas signalé : 20° l'après-midi, frais à l'aube, et Khloé (frileuse)
+    // se voyait proposer manteau, bonnet et gants.
+    const outfit = suggestOutfit(khloe, day({ minTemp: 10, maxTemp: 20 }));
     const labelsList = outfit.layers.map((l) => l.label);
-    expect(labelsList).toContain("Sweat et veste");
-    expect(labelsList).toContain("Pantalon chaud");
-    expect(labelsList).not.toContain("T-shirt");
+    expect(labelsList).not.toContain("Manteau chaud sur un pull");
+    expect(labelsList).not.toContain("Bonnet, écharpe et gants");
+    expect(labelsList).toContain("Couche facile à enlever une fois qu'il fera plus chaud");
+  });
+
+  it("garde une petite couche quand le matin est frais et l'après-midi doux", () => {
+    const labelsList = labels(khloe, day({ minTemp: 13, maxTemp: 24 }));
+    expect(labelsList).toContain("T-shirt avec un gilet fin");
   });
 
   it("ajoute un imperméable quand la pluie est probable", () => {
@@ -59,7 +64,7 @@ describe("suggestOutfit", () => {
   });
 
   it("couvre davantage une personne frileuse qu'une personne qui a chaud", () => {
-    const weather = day({ maxTemp: 15, minTemp: 15 });
+    const weather = day({ maxTemp: 14, minTemp: 14 });
     const frileuse = suggestOutfit(ernestine, weather);
     const chaud = suggestOutfit(stephane, weather);
 

@@ -13,12 +13,14 @@ import { suggestOutfit } from "@/lib/outfit";
 import { describeWeather } from "@/lib/weather";
 import { CATEGORY_ACCENT, CATEGORY_LABEL, accentClasses } from "@/lib/accents";
 import {
+  addDays,
   currentTime as formatClock,
   formatDateRangeMonth,
   formatDayNumber,
   formatLongDate,
   formatRelativeDay,
   formatWeekdayShort,
+  outfitDay,
   todayKey,
 } from "@/lib/dates";
 import { remainingCount } from "@/lib/shopping";
@@ -58,7 +60,9 @@ export function Dashboard({ initialIso }: DashboardProps) {
   const activeDate = selectedDate && week.includes(selectedDate) ? selectedDate : today;
 
   const dayEvents = eventsForDay(events, activeDate, selectedMember);
-  const selectedWeather = forecast?.days.find((day) => day.date === activeDate);
+  // Un jour choisi dans la semaine l'emporte ; sinon, la tenue de demain
+  // dès 19 h (pour préparer les habits la veille), celle du jour dès minuit.
+  const outfitDate = selectedDate && week.includes(selectedDate) ? selectedDate : outfitDay(now);
   const focusedMember = selectedMember ? memberById(selectedMember) : undefined;
 
   function handleSaveEvent(values: NewEvent) {
@@ -134,9 +138,9 @@ export function Dashboard({ initialIso }: DashboardProps) {
 
       {forecast ? (
         <OutfitSection
-          date={activeDate}
+          date={outfitDate}
           today={today}
-          day={selectedWeather ?? forecast.days[0]}
+          day={forecast.days.find((day) => day.date === outfitDate) ?? forecast.days[0]}
         />
       ) : null}
 
@@ -709,7 +713,9 @@ function OutfitSection({
     <Card>
       <CardTitle
         eyebrow={`Tenue · ${formatRelativeDay(date, today)}`}
-        title="Ce que chacun devrait porter"
+        title={`Ce que chacun devrait porter ${
+          date === today ? "aujourd'hui" : date === addDays(today, 1) ? "demain" : formatRelativeDay(date, today).toLowerCase()
+        }`}
       />
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {MEMBERS.map((member) => {
