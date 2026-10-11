@@ -1,12 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { Icon } from "./Icon";
 
 /** Durée d'affichage avant fermeture automatique. */
 const AUTO_CLOSE_MS = 2500;
 
 interface Confirmation {
-  emoji: string;
+  /** « deleted » pour une suppression, sinon une coche verte. */
+  kind?: "saved" | "deleted";
   title: string;
   detail?: string;
 }
@@ -17,7 +19,7 @@ interface Confirmation {
  * page passait inaperçu une fois le formulaire refermé), et qui se referme
  * toute seule.
  *
- * `confirm({ emoji: "✓", title: "Ajouté au calendrier", detail: "Natation" })`
+ * `confirm({ title: "Ajouté au calendrier", detail: "Natation" })`
  */
 export function useSaveConfirmation() {
   const [current, setCurrent] = useState<Confirmation | null>(null);
@@ -64,23 +66,25 @@ function SaveConfirmationDialog({
       >
         <span
           aria-hidden
-          className="flex h-16 w-16 items-center justify-center rounded-full bg-sage-soft text-3xl"
+          className={`flex h-16 w-16 items-center justify-center rounded-full ${
+            confirmation.kind === "deleted" ? "bg-cream-deep text-ink-soft" : "bg-sage text-white"
+          }`}
         >
-          {confirmation.emoji}
+          <Icon name={confirmation.kind === "deleted" ? "close" : "check"} className="h-8 w-8" strokeWidth={2.4} />
         </span>
         <div>
-          <h2 id="save-confirmation-title" className="text-xl font-extrabold text-ink">
+          <h2 id="save-confirmation-title" className="text-xl font-semibold text-ink">
             {confirmation.title}
           </h2>
           {confirmation.detail ? (
-            <p className="mt-1 break-words text-sm font-semibold text-ink-soft">{confirmation.detail}</p>
+            <p className="mt-1 break-words text-sm font-medium text-ink-soft">{confirmation.detail}</p>
           ) : null}
         </div>
         <button
           type="button"
           onClick={onClose}
           autoFocus
-          className="mt-1 inline-flex min-h-11 items-center btn-pop btn-pop-sage px-8 text-sm font-extrabold"
+          className="mt-1 inline-flex min-h-11 items-center btn-pop btn-pop-coral px-8 text-sm font-semibold"
         >
           OK
         </button>

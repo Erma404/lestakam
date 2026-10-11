@@ -2,10 +2,11 @@
 
 import { useMemo, useState } from "react";
 import Image from "next/image";
-import Link from "next/link";
 import { useSaveConfirmation } from "./SaveConfirmation";
 import { Avatar } from "./Avatar";
-import { Card, CardTitle } from "./Card";
+import { Card, CardLink, CardTitle } from "./Card";
+import { Icon } from "./Icon";
+import { KhloeScore } from "./KhloeScore";
 import { EventForm } from "./EventForm";
 import { ReminderForm } from "./ReminderForm";
 import { MEMBERS, memberById } from "@/lib/family";
@@ -70,10 +71,10 @@ export function Dashboard({ initialIso }: DashboardProps) {
   function handleSaveEvent(values: NewEvent) {
     if (editingEvent) {
       updateEvent(baseEventId(editingEvent.id), values);
-      confirm({ emoji: "✏️", title: "Événement modifié", detail: values.title });
+      confirm({ title: "Événement modifié", detail: values.title });
     } else {
       addEvent(values);
-      confirm({ emoji: "📅", title: "Ajouté au calendrier", detail: values.title });
+      confirm({ title: "Ajouté au calendrier", detail: values.title });
     }
     setEditingEvent(null);
     setCreatingEventOn(null);
@@ -82,39 +83,35 @@ export function Dashboard({ initialIso }: DashboardProps) {
   function handleDeleteEvent() {
     if (!editingEvent) return;
     deleteEvent(baseEventId(editingEvent.id));
-    confirm({ emoji: "🗑️", title: "Événement supprimé", detail: editingEvent.title });
+    confirm({ kind: "deleted", title: "Événement supprimé", detail: editingEvent.title });
     setEditingEvent(null);
   }
 
   function handleSaveReminder(values: NewReminder) {
     if (editingReminder) {
       updateReminder(editingReminder.id, values);
-      confirm({ emoji: "✏️", title: "Rappel modifié", detail: values.label });
+      confirm({ title: "Rappel modifié", detail: values.label });
     } else {
       addReminder(values);
-      confirm({ emoji: "📌", title: "Rappel ajouté", detail: values.label });
+      confirm({ title: "Rappel ajouté", detail: values.label });
     }
     setEditingReminder(null);
     setCreatingReminder(false);
   }
 
   return (
-    <div className="mx-auto flex max-w-6xl flex-col gap-5 p-4 sm:p-6 lg:p-8">
-      <DashboardHeader today={today} currentTime={clock} />
-
-      <FamilyStrip
-        selectedMember={selectedMember}
-        onSelect={(id) => setSelectedMember((current) => (current === id ? null : id))}
-      />
-
-      <WeatherSection
-        forecast={forecast}
-        error={weatherError}
-        loading={weatherLoading}
+    <div className="mx-auto flex max-w-6xl flex-col gap-6 p-4 sm:p-6 lg:p-8">
+      <Hero
         today={today}
+        clock={clock}
+        forecast={forecast}
+        weatherError={weatherError}
+        weatherLoading={weatherLoading}
+        selectedMember={selectedMember}
+        onSelectMember={(id) => setSelectedMember((current) => (current === id ? null : id))}
       />
 
-      <WeekSection
+      <WeekStrip
         week={week}
         today={today}
         selectedDate={activeDate}
@@ -123,25 +120,30 @@ export function Dashboard({ initialIso }: DashboardProps) {
         onSelect={setSelectedDate}
       />
 
-      <DaySection
-        date={activeDate}
-        today={today}
-        events={dayEvents}
-        focusedMemberName={focusedMember?.firstName}
-        onClearFilter={() => setSelectedMember(null)}
-        onEditEvent={setEditingEvent}
-        onAddEvent={() => setCreatingEventOn(activeDate)}
-      />
-
-      <RemindersSection
-        reminders={reminders}
-        today={today}
-        onAdd={() => setCreatingReminder(true)}
-        onEdit={setEditingReminder}
-        onToggleDone={toggleDone}
-      />
-
-      <ShoppingSection items={shoppingItems} onToggle={toggleShoppingItem} />
+      <div className="grid items-start gap-5 lg:grid-cols-[1.55fr_1fr]">
+        <div className="flex flex-col gap-5">
+          <DaySection
+            date={activeDate}
+            today={today}
+            events={dayEvents}
+            focusedMemberName={focusedMember?.firstName}
+            onClearFilter={() => setSelectedMember(null)}
+            onEditEvent={setEditingEvent}
+            onAddEvent={() => setCreatingEventOn(activeDate)}
+          />
+          <KhloeScore today={today} now={now} />
+        </div>
+        <div className="flex flex-col gap-5">
+          <RemindersSection
+            reminders={reminders}
+            today={today}
+            onAdd={() => setCreatingReminder(true)}
+            onEdit={setEditingReminder}
+            onToggleDone={toggleDone}
+          />
+          <ShoppingSection items={shoppingItems} onToggle={toggleShoppingItem} />
+        </div>
+      </div>
 
       {forecast ? (
         <OutfitSection
@@ -172,7 +174,7 @@ export function Dashboard({ initialIso }: DashboardProps) {
             editingReminder
               ? () => {
                   deleteReminder(editingReminder.id);
-                  confirm({ emoji: "🗑️", title: "Rappel supprimé", detail: editingReminder.label });
+                  confirm({ kind: "deleted", title: "Rappel supprimé", detail: editingReminder.label });
                   setEditingReminder(null);
                 }
               : undefined
@@ -189,183 +191,115 @@ export function Dashboard({ initialIso }: DashboardProps) {
   );
 }
 
-function DashboardHeader({ today, currentTime }: { today: string; currentTime: string }) {
-  const longDate = formatLongDate(today);
-  return (
-    <header className="relative overflow-hidden rounded-card border border-line bg-gradient-to-br from-sun-soft via-cream to-sage-soft/70 p-5 shadow-[0_3px_0_var(--color-line)] sm:p-6">
-      {/* Touches décoratives, pour casser la carte plate — de simples ronds de couleur flous */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -right-10 -top-14 h-40 w-40 rounded-full bg-sky-soft/60 blur-xl"
-      />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -bottom-16 left-1/3 h-36 w-36 rounded-full bg-rose-soft/50 blur-xl"
-      />
+function capitalize(text: string): string {
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
 
-      <Link href="/" className="relative flex flex-wrap items-center gap-4 sm:gap-5">
+/** Le salut du moment, selon l'heure affichée (HH:MM). */
+function greeting(clock: string): string {
+  const hour = Number(clock.slice(0, 2));
+  if (hour < 5 || hour >= 18) return "Bonsoir les Takam";
+  return "Bonjour les Takam";
+}
+
+/**
+ * En-tête sans cadre, lisible depuis l'autre bout de la cuisine : la date
+ * complète et l'heure en grand, la météo du moment, et la famille pour
+ * filtrer le programme.
+ */
+function Hero({
+  today,
+  clock,
+  forecast,
+  weatherError,
+  weatherLoading,
+  selectedMember,
+  onSelectMember,
+}: {
+  today: string;
+  clock: string;
+  forecast: WeatherForecast | null;
+  weatherError?: string;
+  weatherLoading: boolean;
+  selectedMember: MemberId | null;
+  onSelectMember: (id: MemberId) => void;
+}) {
+  const year = today.slice(0, 4);
+  const todayWeather = forecast?.days.find((day) => day.date === today) ?? forecast?.days[0];
+  const look = forecast ? describeWeather(forecast.now.weatherCode, forecast.now.isDay) : null;
+
+  return (
+    <header className="flex flex-col gap-5 pt-2 lg:flex-row lg:items-end lg:justify-between">
+      <div className="flex items-center gap-4">
         <Image
           src="/famille-takam.jpg"
           alt="La famille Takam : Stéphane, Ernestine et Khloé"
           width={200}
           height={221}
           priority
-          className="h-16 w-16 shrink-0 rounded-full border-4 border-white object-cover shadow-md sm:h-24 sm:w-24"
+          className="h-16 w-16 shrink-0 rounded-full object-cover sm:h-20 sm:w-20"
         />
         <div className="min-w-0">
-          <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-ink-soft">
-            Bienvenue à la maison
-          </p>
-          <h1 className="font-display text-3xl font-bold tracking-tight text-ink sm:text-5xl">
-            Hello les Takam !
+          <p className="text-base text-ink-soft">{greeting(clock)}</p>
+          <h1 className="font-display text-3xl font-medium leading-tight text-ink sm:text-4xl">
+            {capitalize(formatLongDate(today))} {year}
           </h1>
+          <div className="mt-3 flex flex-wrap gap-2" role="group" aria-label="Filtrer le programme">
+            {MEMBERS.map((member) => {
+              const selected = selectedMember === member.id;
+              return (
+                <button
+                  key={member.id}
+                  type="button"
+                  onClick={() => onSelectMember(member.id)}
+                  aria-pressed={selected}
+                  className={`flex min-h-11 items-center gap-2 rounded-pill py-1 pl-1 pr-4 text-sm font-medium transition-colors ${
+                    selected ? "bg-forest text-white" : "bg-surface text-ink hover:bg-cream-deep"
+                  }`}
+                >
+                  <Avatar member={member} size="xs" />
+                  {member.firstName}
+                </button>
+              );
+            })}
+          </div>
         </div>
-      </Link>
+      </div>
 
-      <div className="relative mt-4 flex flex-wrap items-end justify-between gap-2 border-t border-white/70 pt-4">
-        <div>
-          <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-ink-faint">
-            Aujourd&apos;hui
-          </p>
-          <p className="text-xl font-extrabold tracking-tight text-ink sm:text-2xl">
-            {longDate.charAt(0).toUpperCase() + longDate.slice(1)}
-          </p>
-        </div>
+      <div className="flex items-end gap-5 sm:gap-8">
         <p
           data-testid="horloge"
-          className="rounded-pill bg-white/80 px-4 py-1.5 text-lg font-extrabold text-ink-soft"
+          className="font-display text-6xl font-medium leading-none tracking-tight text-ink tabular-nums sm:text-7xl"
         >
-          {currentTime}
+          {clock}
         </p>
+        {forecast && look && todayWeather ? (
+          <div className="flex items-center gap-3 rounded-card bg-surface px-4 py-3">
+            <span className="text-4xl leading-none" aria-hidden>
+              {look.emoji}
+            </span>
+            <div>
+              <p className="text-2xl font-medium leading-tight text-ink">
+                {Math.round(forecast.now.temperature)}°
+                <span className="ml-1.5 text-sm text-ink-soft">{look.label}</span>
+              </p>
+              <p className="text-sm text-ink-soft">
+                {Math.round(todayWeather.minTemp)}° / {Math.round(todayWeather.maxTemp)}° · pluie{" "}
+                {todayWeather.rainChance} %
+              </p>
+            </div>
+          </div>
+        ) : (
+          <p className="max-w-48 text-sm text-ink-soft">
+            {weatherLoading ? "Météo en route…" : (weatherError ?? "Météo indisponible pour le moment.")}
+          </p>
+        )}
       </div>
     </header>
   );
 }
 
-/** Le sous-titre affiché sous chaque prénom, sur la carte « Qui regarde ? ». */
-function familyRoleLabel(member: { id: MemberId; role: "parent" | "enfant" }): string {
-  if (member.id === "stephane") return "Papa";
-  if (member.id === "ernestine") return "Maman";
-  if (member.id === "khloe") return "La star";
-  return member.role === "parent" ? "Parent" : "Enfant";
-}
-
-function FamilyStrip({
-  selectedMember,
-  onSelect,
-}: {
-  selectedMember: MemberId | null;
-  onSelect: (id: MemberId) => void;
-}) {
-  return (
-    <Card>
-      <CardTitle
-        eyebrow="La famille"
-        title={selectedMember ? "Voir toute la famille" : "Qui regarde ?"}
-        action={
-          selectedMember ? (
-            <span className="rounded-pill bg-cream-deep px-3 py-1 text-xs font-bold text-ink-soft">
-              Touchez à nouveau pour tout afficher
-            </span>
-          ) : null
-        }
-      />
-      <div className="flex flex-wrap gap-3 sm:gap-5">
-        {MEMBERS.map((member) => {
-          const selected = selectedMember === member.id;
-          return (
-            <button
-              key={member.id}
-              type="button"
-              onClick={() => onSelect(member.id)}
-              aria-pressed={selected}
-              className={`flex min-w-24 flex-1 flex-col items-center gap-2 rounded-card px-3 py-4 transition-colors sm:min-w-32 sm:flex-none ${
-                selected ? "bg-cream-deep" : "hover:bg-cream-deep/60"
-              }`}
-            >
-              <Avatar member={member} size="lg" selected={selected} />
-              <span className="text-base font-extrabold text-ink">{member.firstName}</span>
-              <span className="text-xs font-semibold text-ink-faint">{familyRoleLabel(member)}</span>
-            </button>
-          );
-        })}
-      </div>
-    </Card>
-  );
-}
-
-function WeatherSection({
-  forecast,
-  error,
-  loading,
-  today,
-}: {
-  forecast: WeatherForecast | null;
-  error?: string;
-  loading: boolean;
-  today: string;
-}) {
-  if (!forecast) {
-    return (
-      <Card>
-        <CardTitle
-          eyebrow="Météo"
-          title={loading ? "Météo en cours de chargement…" : "Météo momentanément indisponible"}
-        />
-        {loading ? null : (
-          <p className="text-sm font-semibold text-ink-soft">
-            {error ?? "Le service météo ne répond pas."} Le reste du tableau de bord fonctionne
-            normalement.
-          </p>
-        )}
-      </Card>
-    );
-  }
-
-  const todayWeather = forecast.days.find((day) => day.date === today) ?? forecast.days[0];
-  const now = describeWeather(forecast.now.weatherCode, forecast.now.isDay);
-
-  return (
-    <Card className="bg-gradient-to-br from-sky-soft/80 to-white/80">
-      <CardTitle eyebrow={`Météo · ${forecast.locationName}`} title="La météo du jour" />
-      <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
-        <span className="text-6xl leading-none" aria-hidden>
-          {now.emoji}
-        </span>
-        <div>
-          <p className="text-4xl font-extrabold tracking-tight text-ink">
-            {forecast.now.temperature}°
-          </p>
-          <p className="text-sm font-semibold text-ink-soft">
-            {now.label} · ressenti {forecast.now.feelsLike}°
-          </p>
-        </div>
-        <dl className="flex gap-3">
-          <WeatherStat label="Basse" value={`${todayWeather.minTemp}°`} tone="bg-sky-soft" />
-          <WeatherStat label="Haute" value={`${todayWeather.maxTemp}°`} tone="bg-sun-soft" />
-          <WeatherStat
-            label="Pluie"
-            value={`${todayWeather.rainChance} %`}
-            tone="bg-lilac-soft"
-          />
-        </dl>
-      </div>
-    </Card>
-  );
-}
-
-function WeatherStat({ label, value, tone }: { label: string; value: string; tone: string }) {
-  return (
-    <div className={`rounded-3xl ${tone} px-4 py-2 text-center`}>
-      <dt className="text-[11px] font-bold uppercase tracking-[0.12em] text-ink-faint">
-        {label}
-      </dt>
-      <dd className="text-xl font-extrabold text-ink">{value}</dd>
-    </div>
-  );
-}
-
-function WeekSection({
+function WeekStrip({
   week,
   today,
   selectedDate,
@@ -381,20 +315,14 @@ function WeekSection({
   onSelect: (date: string) => void;
 }) {
   return (
-    <Card>
-      <CardTitle
-        eyebrow="7 prochains jours"
-        title={formatDateRangeMonth(week)}
-        action={
-          <Link
-            href="/calendrier"
-            className="inline-flex min-h-11 items-center rounded-pill bg-cream-deep px-4 text-xs font-bold text-ink-soft hover:bg-line"
-          >
-            Tout le calendrier
-          </Link>
-        }
-      />
-      <ul className="scrollbar-soft -mx-1 flex gap-2 overflow-x-auto px-1 pb-2">
+    <section aria-labelledby="semaine-titre">
+      <div className="mb-3 flex items-end justify-between gap-3">
+        <h2 id="semaine-titre" className="font-display text-xl font-medium text-ink">
+          {capitalize(formatDateRangeMonth(week))}
+        </h2>
+        <CardLink href="/calendrier">Tout le calendrier</CardLink>
+      </div>
+      <ul className="scrollbar-soft -mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
         {week.map((date) => {
           const isToday = date === today;
           const isSelected = date === selectedDate;
@@ -408,39 +336,37 @@ function WeekSection({
                 type="button"
                 onClick={() => onSelect(date)}
                 aria-pressed={isSelected}
-                className={`flex w-full min-w-24 flex-col items-center gap-1 rounded-3xl border px-2 py-3 transition-colors ${
-                  isSelected
-                    ? "border-sage bg-sage-soft"
-                    : "border-line bg-white hover:bg-cream-deep/60"
+                aria-label={`${formatLongDate(date)}, ${count === 0 ? "rien de prévu" : `${count} rendez-vous`}`}
+                className={`tile-pop flex w-full min-w-20 flex-col items-center gap-1 rounded-card px-2 py-3 transition-colors ${
+                  isSelected ? "bg-forest text-white" : "bg-surface text-ink hover:bg-cream-deep"
                 }`}
               >
-                <span
-                  className={`text-[11px] font-bold uppercase tracking-[0.1em] ${
-                    isToday ? "text-sage" : "text-ink-faint"
-                  }`}
-                >
-                  {isToday ? "AUJ." : formatWeekdayShort(date)}
+                <span className={`text-xs ${isSelected ? "text-white/80" : isToday ? "text-coral" : "text-ink-soft"}`}>
+                  {isToday ? "Aujourd'hui" : capitalize(formatWeekdayShort(date).toLowerCase())}
                 </span>
-                <span className="text-2xl font-extrabold text-ink">{formatDayNumber(date)}</span>
-                {look ? (
-                  <span className="text-lg" aria-hidden>
-                    {look.emoji}
+                <span className="text-2xl font-medium tabular-nums">{formatDayNumber(date)}</span>
+                {look && weather ? (
+                  <span className={`text-xs ${isSelected ? "text-white/80" : "text-ink-soft"}`}>
+                    <span aria-hidden>{look.emoji}</span> {Math.round(weather.maxTemp)}°
                   </span>
                 ) : null}
-                {weather ? (
-                  <span className="text-xs font-bold text-ink-soft">
-                    {weather.maxTemp}° / {weather.minTemp}°
-                  </span>
-                ) : null}
-                <span className="text-[11px] font-semibold text-ink-faint">
-                  {count === 0 ? "Rien de prévu" : `${count} rendez-vous`}
+                <span
+                  aria-hidden
+                  className={`mt-0.5 flex h-1.5 gap-1 ${count === 0 ? "opacity-0" : ""}`}
+                >
+                  {Array.from({ length: Math.min(count, 3) }, (_, index) => (
+                    <span
+                      key={index}
+                      className={`h-1.5 w-1.5 rounded-full ${isSelected ? "bg-surface" : "bg-coral"}`}
+                    />
+                  ))}
                 </span>
               </button>
             </li>
           );
         })}
       </ul>
-    </Card>
+    </section>
   );
 }
 
@@ -461,22 +387,19 @@ function DaySection({
   onEditEvent: (event: CalendarEvent) => void;
   onAddEvent: () => void;
 }) {
+  const dayLabel = date === today ? "Aujourd'hui" : capitalize(formatLongDate(date));
   return (
     <Card>
       <CardTitle
-        eyebrow={formatRelativeDay(date, today)}
-        title={
-          focusedMemberName
-            ? `Le programme de ${focusedMemberName}`
-            : "Le programme de la journée"
-        }
+        eyebrow={focusedMemberName ? `Le programme de ${focusedMemberName}` : "Le programme"}
+        title={dayLabel}
         action={
           <div className="flex items-center gap-2">
             {focusedMemberName ? (
               <button
                 type="button"
                 onClick={onClearFilter}
-                className="inline-flex min-h-11 items-center rounded-pill bg-cream-deep px-4 text-xs font-bold text-ink-soft hover:bg-line"
+                className="inline-flex min-h-11 items-center px-2 text-sm font-medium text-coral hover:underline"
               >
                 Toute la famille
               </button>
@@ -484,20 +407,18 @@ function DaySection({
             <button
               type="button"
               onClick={onAddEvent}
-              className="inline-flex min-h-11 items-center gap-1 btn-pop btn-pop-sage px-4 text-xs font-extrabold "
+              className="btn-pop btn-pop-coral min-h-11 px-4 text-sm"
             >
-              <span aria-hidden>＋</span> Ajouter
+              <Icon name="plus" className="h-4 w-4" strokeWidth={2.2} /> Ajouter
             </button>
           </div>
         }
       />
 
       {events.length === 0 ? (
-        <p className="rounded-3xl bg-cream-deep/60 px-4 py-6 text-center text-sm font-semibold text-ink-soft">
-          Rien de prévu ce jour-là. 🌿
-        </p>
+        <p className="py-2 text-base text-ink-soft">Rien de prévu, journée libre.</p>
       ) : (
-        <ul className="flex flex-col gap-2">
+        <ul className="flex flex-col divide-y divide-dashed divide-line">
           {events.map((event) => (
             <EventRow key={event.id} event={event} onEdit={() => onEditEvent(event)} />
           ))}
@@ -507,6 +428,23 @@ function DaySection({
   );
 }
 
+const SHORT_DAY = ["dim.", "lun.", "mar.", "mer.", "jeu.", "ven.", "sam."];
+
+/** « du lun. au ven., hors vacances », « chaque semaine »… */
+function repeatLabel(event: CalendarEvent): string {
+  const days = event.repeatDays;
+  let label = "chaque semaine";
+  if (days && days.length > 0) {
+    const sorted = [...days].sort((a, b) => ((a + 6) % 7) - ((b + 6) % 7));
+    const consecutive = sorted.every((day, index) => index === 0 || (sorted[index - 1] + 1) % 7 === day);
+    label =
+      sorted.length >= 3 && consecutive
+        ? `du ${SHORT_DAY[sorted[0]]} au ${SHORT_DAY[sorted[sorted.length - 1]]}`
+        : sorted.map((day) => SHORT_DAY[day]).join(", ");
+  }
+  return event.skipSchoolHolidays ? `${label}, hors vacances` : label;
+}
+
 function EventRow({ event, onEdit }: { event: CalendarEvent; onEdit: () => void }) {
   const accent = accentClasses(CATEGORY_ACCENT[event.category]);
   const people = event.memberIds
@@ -514,28 +452,23 @@ function EventRow({ event, onEdit }: { event: CalendarEvent; onEdit: () => void 
     .filter((member): member is NonNullable<typeof member> => Boolean(member));
 
   return (
-    <li className={`flex items-center gap-2 rounded-3xl ${accent.soft} pr-2`}>
+    <li className="flex items-center gap-2 py-1">
       <button
         type="button"
         onClick={onEdit}
-        className="flex min-w-0 flex-1 items-center gap-3 rounded-3xl px-4 py-3 text-left hover:brightness-97"
+        className="flex min-w-0 flex-1 items-center gap-4 rounded-2xl py-3 pr-2 text-left hover:bg-cream/60"
       >
-        <div className="w-16 shrink-0 text-center">
-          <p className="text-base font-extrabold text-ink">{event.startTime ?? "Journée"}</p>
-          {event.endTime ? (
-            <p className="text-[11px] font-semibold text-ink-faint">jusqu&apos;à {event.endTime}</p>
-          ) : null}
+        <div className="w-14 shrink-0">
+          <p className="text-base font-medium text-ink tabular-nums">{event.startTime ?? "Journée"}</p>
+          {event.endTime ? <p className="text-xs text-ink-soft tabular-nums">{event.endTime}</p> : null}
         </div>
+        <span aria-hidden className={`h-10 w-1.5 shrink-0 rounded-full ${accent.solid}`} />
         <div className="min-w-0 flex-1">
-          <p className="text-base font-extrabold break-words text-ink">{event.title}</p>
-          <p className="text-xs font-semibold break-words text-ink-soft">
+          <p className="break-words text-base font-medium text-ink">{event.title}</p>
+          <p className="break-words text-sm text-ink-soft">
             {CATEGORY_LABEL[event.category]}
             {event.location ? ` · ${event.location}` : ""}
-            {event.repeatsWeekly
-              ? event.skipSchoolHolidays
-                ? " · chaque semaine hors vacances"
-                : " · chaque semaine"
-              : ""}
+            {event.repeatsWeekly ? ` · ${repeatLabel(event)}` : ""}
           </p>
         </div>
         <div className="flex -space-x-2">
@@ -551,12 +484,42 @@ function EventRow({ event, onEdit }: { event: CalendarEvent; onEdit: () => void 
           rel="noopener noreferrer"
           aria-label={`Ouvrir ${event.location} dans Google Maps`}
           title="Itinéraire"
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white/80 text-xl hover:bg-white"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-coral-soft text-coral hover:brightness-95"
         >
-          📍
+          <Icon name="pin" className="h-5 w-5" />
         </a>
       ) : null}
     </li>
+  );
+}
+
+function RoundCheck({
+  checked,
+  onToggle,
+  label,
+}: {
+  checked: boolean;
+  onToggle: () => void;
+  label: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-pressed={checked}
+      aria-label={label}
+      className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-colors ${
+        checked ? "bg-sage text-white" : "text-transparent"
+      }`}
+    >
+      <span
+        className={`flex h-7 w-7 items-center justify-center rounded-full border-2 ${
+          checked ? "border-transparent" : "border-line"
+        }`}
+      >
+        <Icon name="check" className="h-4 w-4" strokeWidth={2.4} />
+      </span>
+    </button>
   );
 }
 
@@ -574,62 +537,46 @@ function RemindersSection({
   onToggleDone: (id: string) => void;
 }) {
   return (
-    <Card className="bg-sun-soft/60">
+    <Card>
       <CardTitle
-        eyebrow="À ne pas oublier"
-        title="Les actions clés de la semaine"
+        eyebrow="Cette semaine"
+        title="À ne pas oublier"
         action={
           <button
             type="button"
             onClick={onAdd}
-            className="inline-flex min-h-11 items-center gap-1 rounded-pill bg-white px-4 text-xs font-extrabold text-ink-soft hover:bg-cream-deep"
+            aria-label="Ajouter un rappel"
+            className="flex h-11 w-11 items-center justify-center rounded-full bg-coral text-white hover:brightness-105"
           >
-            <span aria-hidden>＋</span> Ajouter
+            <Icon name="plus" className="h-5 w-5" strokeWidth={2.2} />
           </button>
         }
       />
       {reminders.length === 0 ? (
-        <p className="text-sm font-semibold text-ink-soft">Rien d&apos;urgent cette semaine. 🎉</p>
+        <p className="text-base text-ink-soft">Rien d&apos;urgent cette semaine.</p>
       ) : (
-        <ul className="flex flex-col gap-2">
+        <ul className="flex flex-col divide-y divide-dashed divide-line">
           {reminders.map((reminder) => {
             const people = reminder.memberIds
               .map((id) => memberById(id))
               .filter((member): member is NonNullable<typeof member> => Boolean(member));
             return (
-              <li
-                key={reminder.id}
-                className="flex items-center gap-3 rounded-3xl bg-white/80 px-4 py-3"
-              >
-                <button
-                  type="button"
-                  onClick={() => onToggleDone(reminder.id)}
-                  aria-pressed={reminder.done}
-                  aria-label={reminder.done ? "Marquer non fait" : "Marquer fait"}
-                  className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 text-lg ${
-                    reminder.done
-                      ? "border-sage bg-sage text-white"
-                      : "border-line bg-white text-transparent"
-                  }`}
-                >
-                  ✓
-                </button>
-                <button
-                  type="button"
-                  onClick={() => onEdit(reminder)}
-                  className="min-w-0 flex-1 text-left"
-                >
+              <li key={reminder.id} className="flex items-center gap-2 py-1.5">
+                <RoundCheck
+                  checked={reminder.done}
+                  onToggle={() => onToggleDone(reminder.id)}
+                  label={reminder.done ? "Marquer non fait" : "Marquer fait"}
+                />
+                <button type="button" onClick={() => onEdit(reminder)} className="min-w-0 flex-1 text-left">
                   <p
-                    className={`text-base font-extrabold break-words ${
+                    className={`break-words text-base font-medium ${
                       reminder.done ? "text-ink-faint line-through" : "text-ink"
                     }`}
                   >
                     {reminder.label}
                   </p>
                   {reminder.dueDate ? (
-                    <p className="text-xs font-semibold text-ink-soft">
-                      {formatRelativeDay(reminder.dueDate, today)}
-                    </p>
+                    <p className="text-sm text-ink-soft">{formatRelativeDay(reminder.dueDate, today)}</p>
                   ) : null}
                 </button>
                 <div className="flex -space-x-2">
@@ -665,58 +612,37 @@ function ShoppingSection({
   return (
     <Card>
       <CardTitle
-        eyebrow="Courses"
-        title={
+        eyebrow={
           left === 0 && items.length > 0
-            ? "Tout est dans le caddie 🎉"
+            ? "Tout est dans le caddie"
             : `${left} article${left > 1 ? "s" : ""} à prendre`
         }
-        action={
-          <Link
-            href="/listes"
-            className="inline-flex min-h-11 items-center rounded-pill bg-cream-deep px-4 text-xs font-bold text-ink-soft hover:bg-line"
-          >
-            Toute la liste
-          </Link>
-        }
+        title="Courses"
+        action={<CardLink href="/listes">Toute la liste</CardLink>}
       />
       {items.length === 0 ? (
-        <p className="rounded-3xl bg-cream-deep/60 px-4 py-6 text-center text-sm font-semibold text-ink-soft">
-          La liste est vide. 🌿
-        </p>
+        <p className="text-base text-ink-soft">La liste est vide.</p>
       ) : (
-        <ul className="flex flex-col gap-2">
+        <ul className="flex flex-col divide-y divide-dashed divide-line">
           {preview.map((item) => (
-            <li key={item.id} className="flex items-center gap-3 rounded-3xl bg-white/80 px-4 py-2.5">
-              <button
-                type="button"
-                onClick={() => onToggle(item.id)}
-                aria-pressed={item.checked}
-                aria-label={item.checked ? "Décocher cet article" : "Cocher cet article"}
-                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 text-base ${
-                  item.checked
-                    ? "border-sage bg-sage text-white"
-                    : "border-line bg-white text-transparent"
-                }`}
-              >
-                ✓
-              </button>
+            <li key={item.id} className="flex items-center gap-2 py-0.5">
+              <RoundCheck
+                checked={item.checked}
+                onToggle={() => onToggle(item.id)}
+                label={item.checked ? "Décocher cet article" : "Cocher cet article"}
+              />
               <span
-                className={`min-w-0 flex-1 truncate text-sm font-extrabold ${
+                className={`min-w-0 flex-1 truncate text-base ${
                   item.checked ? "text-ink-faint line-through" : "text-ink"
                 }`}
               >
                 {item.label}
-                {item.quantity ? (
-                  <span className="ml-2 text-xs font-semibold text-ink-faint">
-                    {item.quantity}
-                  </span>
-                ) : null}
+                {item.quantity ? <span className="ml-2 text-sm text-ink-soft">{item.quantity}</span> : null}
               </span>
             </li>
           ))}
           {hiddenCount > 0 ? (
-            <li className="px-2 text-xs font-bold text-ink-faint">
+            <li className="pt-3 text-sm text-ink-soft">
               +{hiddenCount} autre{hiddenCount > 1 ? "s" : ""} article{hiddenCount > 1 ? "s" : ""}
             </li>
           ) : null}
@@ -735,51 +661,55 @@ function OutfitSection({
   today: string;
   day: NonNullable<WeatherForecast["days"][number]>;
 }) {
+  const when =
+    date === today
+      ? "aujourd'hui"
+      : date === addDays(today, 1)
+        ? "demain"
+        : formatRelativeDay(date, today).toLowerCase();
   return (
-    <Card>
-      <CardTitle
-        eyebrow={`Tenue · ${formatRelativeDay(date, today)}`}
-        title={`Ce que chacun devrait porter ${
-          date === today ? "aujourd'hui" : date === addDays(today, 1) ? "demain" : formatRelativeDay(date, today).toLowerCase()
-        }`}
-      />
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+    <section aria-labelledby="tenues-titre">
+      <div className="mb-3">
+        <h2 id="tenues-titre" className="font-display text-xl font-medium text-ink">
+          Ce que chacun devrait porter {when}
+        </h2>
+        <p className="text-sm text-ink-soft">
+          {Math.round(day.minTemp)}° à {Math.round(day.maxTemp)}°, pluie {day.rainChance} %
+        </p>
+      </div>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {MEMBERS.map((member) => {
           const outfit = suggestOutfit(member, day);
           const accent = accentClasses(member.accent);
           return (
-            <article key={member.id} className={`rounded-card ${accent.soft} p-4`}>
+            <article key={member.id} className="rounded-card bg-surface p-5">
               <header className="mb-3 flex items-center gap-3">
                 <Avatar member={member} size="md" />
                 <div className="min-w-0">
-                  <p className="text-base font-extrabold text-ink">{member.firstName}</p>
-                  <p className="truncate text-xs font-semibold text-ink-soft">
-                    {outfit.headline}
-                  </p>
+                  <p className="text-base font-medium text-ink">{member.firstName}</p>
+                  <p className="text-sm text-ink-soft">{outfit.headline}</p>
                 </div>
               </header>
-              <ul className="flex flex-col gap-1.5">
+              <ul className="flex flex-wrap gap-2">
                 {outfit.layers.map((layer, index) => (
                   <li
                     key={`${layer.slot}-${index}`}
-                    className="flex items-center gap-2 rounded-2xl bg-white/70 px-3 py-2"
+                    className={`flex items-center gap-2 rounded-pill ${accent.soft} px-3 py-1.5`}
                   >
-                    <span className="text-lg" aria-hidden>
+                    <span className="text-lg leading-none" aria-hidden>
                       {layer.emoji}
                     </span>
-                    <span className="text-sm font-bold text-ink">{layer.label}</span>
+                    <span className="text-sm text-ink">{layer.label}</span>
                   </li>
                 ))}
               </ul>
               {outfit.personalNote ? (
-                <p className="mt-2 text-[11px] font-semibold text-ink-faint">
-                  {outfit.personalNote}
-                </p>
+                <p className="mt-3 text-sm text-ink-soft">{outfit.personalNote}</p>
               ) : null}
             </article>
           );
         })}
       </div>
-    </Card>
+    </section>
   );
 }

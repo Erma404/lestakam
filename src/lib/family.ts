@@ -225,6 +225,8 @@ export function demoEvents(today = todayKey()): CalendarEvent[] {
       category: "ecole",
       memberIds: ["khloe"],
       repeatsWeekly: true,
+      repeatDays: [1, 2, 3, 4, 5],
+      skipSchoolHolidays: true,
     },
     {
       id: "demo-natation",

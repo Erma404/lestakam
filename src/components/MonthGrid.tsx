@@ -33,12 +33,12 @@ export function MonthGrid({
   const monthPrefix = currentMonth.slice(0, 7);
 
   return (
-    <div className="overflow-hidden rounded-card border border-line bg-white">
-      <div className="grid grid-cols-7 border-b border-line bg-cream-deep/40">
+    <div className="overflow-hidden rounded-card bg-surface">
+      <div className="grid grid-cols-7 border-b border-line bg-surface">
         {WEEKDAY_LABELS.map((label) => (
           <div
             key={label}
-            className="px-2 py-2 text-center text-[10px] font-bold uppercase tracking-[0.1em] text-ink-faint"
+            className="px-2 py-2 text-center text-xs font-medium text-ink-faint"
           >
             {label}
           </div>
@@ -59,13 +59,13 @@ export function MonthGrid({
               type="button"
               onClick={() => onSelectDay(date)}
               className={`flex min-h-[92px] flex-col items-stretch gap-1 border-b border-r border-line/70 p-1.5 text-left last:border-r-0 sm:min-h-[112px] ${
-                inMonth ? "bg-white" : "bg-cream-deep/20"
-              } hover:bg-cream-deep/40`}
+                inMonth ? "bg-surface" : "bg-cream-deep/20"
+              } hover:bg-surface`}
             >
               <span
-                className={`flex h-7 w-7 items-center justify-center self-start rounded-full text-sm font-extrabold ${
+                className={`flex h-7 w-7 items-center justify-center self-start rounded-full text-sm font-semibold ${
                   isToday
-                    ? "bg-sage text-white"
+                    ? "bg-coral text-white"
                     : inMonth
                       ? "text-ink"
                       : "text-ink-faint"
@@ -77,7 +77,7 @@ export function MonthGrid({
                 ) : null}
               </span>
               {showMonthLabel && !isToday ? (
-                <span className="-mt-1 text-[9px] font-bold uppercase tracking-[0.08em] text-ink-faint">
+                <span className="-mt-1 text-[11px] font-medium text-ink-faint">
                   {formatMonthShort(date)}
                 </span>
               ) : null}
@@ -87,7 +87,7 @@ export function MonthGrid({
                   <MonthEventChip key={event.id} event={event} onClick={() => onEditEvent(event)} />
                 ))}
                 {hiddenCount > 0 ? (
-                  <span className="px-1 text-[10px] font-bold text-ink-faint">
+                  <span className="px-1 text-xs font-medium text-ink-faint">
                     +{hiddenCount} de plus
                   </span>
                 ) : null}
@@ -119,7 +119,7 @@ function MonthEventChip({ event, onClick }: { event: CalendarEvent; onClick: () 
           onClick();
         }
       }}
-      className={`truncate rounded-md ${accent.soft} px-1 py-0.5 text-[10px] font-bold text-ink hover:brightness-97`}
+      className={`truncate rounded-md ${accent.soft} px-1 py-0.5 text-xs font-medium text-ink hover:brightness-97`}
     >
       {event.startTime ? `${event.startTime} ` : ""}
       {event.title}

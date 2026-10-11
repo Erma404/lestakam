@@ -1,5 +1,6 @@
 "use client";
 
+import { Icon } from "./Icon";
 import { useEffect, useId, useRef, useState } from "react";
 import type { RewardGoal } from "@/lib/types";
 import type { NewRewardGoal } from "@/lib/useRewardGoals";
@@ -64,7 +65,7 @@ export function RewardGoalForm({ goal, memberId, onSave, onDelete, onClose }: Re
 
   return (
     <div
-      className="fixed inset-0 z-30 flex items-end justify-center bg-ink/30 p-0 backdrop-blur-sm sm:items-center sm:p-6"
+      className="fixed inset-0 z-30 flex items-end justify-center bg-ink/30 p-0 sm:items-center sm:p-6"
       role="presentation"
       onClick={(clickEvent) => {
         if (clickEvent.target === clickEvent.currentTarget) onClose();
@@ -75,19 +76,19 @@ export function RewardGoalForm({ goal, memberId, onSave, onDelete, onClose }: Re
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className="w-full max-w-md overflow-y-auto rounded-t-card bg-cream p-5 shadow-xl sm:rounded-card sm:p-6"
+        className="w-full max-w-md overflow-y-auto rounded-t-card bg-cream p-5 sm:rounded-card sm:p-6"
       >
         <header className="mb-5 flex items-center justify-between gap-3">
-          <h2 id={titleId} className="text-2xl font-extrabold tracking-tight text-ink">
+          <h2 id={titleId} className="text-2xl font-semibold tracking-tight text-ink">
             {goal ? "Modifier l'objectif" : "Nouvel objectif"}
           </h2>
           <button
             type="button"
             onClick={onClose}
             aria-label="Fermer"
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white text-xl font-bold text-ink-soft hover:bg-cream-deep"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-surface text-ink-soft hover:bg-cream-deep"
           >
-            ✕
+            <Icon name="close" className="h-5 w-5" />
           </button>
         </header>
 
@@ -124,7 +125,7 @@ export function RewardGoalForm({ goal, memberId, onSave, onDelete, onClose }: Re
                   aria-pressed={emoji === value}
                   aria-label={`Choisir l'icône ${value}`}
                   className={`flex h-12 w-12 items-center justify-center rounded-2xl border-2 text-2xl ${
-                    emoji === value ? "border-ink-faint bg-white" : "border-line bg-white/60"
+                    emoji === value ? "border-ink-faint bg-surface" : "border-line bg-surface"
                   }`}
                 >
                   {value}
@@ -134,7 +135,7 @@ export function RewardGoalForm({ goal, memberId, onSave, onDelete, onClose }: Re
           </Group>
 
           {error ? (
-            <p role="alert" className="rounded-3xl bg-rose-soft px-4 py-3 text-sm font-bold text-ink">
+            <p role="alert" className="rounded-3xl bg-rose-soft px-4 py-3 text-sm font-medium text-ink">
               {error}
             </p>
           ) : null}
@@ -142,14 +143,14 @@ export function RewardGoalForm({ goal, memberId, onSave, onDelete, onClose }: Re
           <div className="flex flex-wrap gap-3 pt-1">
             <button
               type="submit"
-              className="min-h-14 flex-1 btn-pop btn-pop-sage px-6 text-base font-extrabold "
+              className="min-h-14 flex-1 btn-pop btn-pop-coral px-6 text-base font-semibold "
             >
               Enregistrer
             </button>
             <button
               type="button"
               onClick={onClose}
-              className="min-h-14 rounded-pill bg-white px-6 text-base font-extrabold text-ink-soft hover:bg-cream-deep"
+              className="min-h-14 rounded-pill bg-surface px-6 text-base font-semibold text-ink-soft hover:bg-cream-deep"
             >
               Annuler
             </button>
@@ -159,20 +160,20 @@ export function RewardGoalForm({ goal, memberId, onSave, onDelete, onClose }: Re
             <div className="border-t border-line pt-4">
               {confirmingDelete ? (
                 <div className="flex flex-wrap items-center gap-3">
-                  <p className="flex-1 text-sm font-bold text-ink">
+                  <p className="flex-1 text-sm font-medium text-ink">
                     Supprimer « {goal?.label} » définitivement ?
                   </p>
                   <button
                     type="button"
                     onClick={onDelete}
-                    className="min-h-11 btn-pop btn-pop-terracotta px-5 text-sm font-extrabold "
+                    className="min-h-11 btn-pop btn-pop-coral px-5 text-sm font-semibold "
                   >
                     Oui, supprimer
                   </button>
                   <button
                     type="button"
                     onClick={() => setConfirmingDelete(false)}
-                    className="min-h-11 rounded-pill bg-white px-5 text-sm font-extrabold text-ink-soft"
+                    className="min-h-11 rounded-pill bg-surface px-5 text-sm font-semibold text-ink-soft"
                   >
                     Non
                   </button>
@@ -181,7 +182,7 @@ export function RewardGoalForm({ goal, memberId, onSave, onDelete, onClose }: Re
                 <button
                   type="button"
                   onClick={() => setConfirmingDelete(true)}
-                  className="min-h-11 rounded-pill px-4 text-sm font-extrabold text-terracotta hover:bg-terracotta-soft"
+                  className="min-h-11 rounded-pill px-4 text-sm font-semibold text-terracotta hover:bg-terracotta-soft"
                 >
                   Supprimer cet objectif
                 </button>
@@ -195,12 +196,12 @@ export function RewardGoalForm({ goal, memberId, onSave, onDelete, onClose }: Re
 }
 
 const inputClass =
-  "min-h-14 w-full rounded-3xl border border-line bg-white px-4 py-3 text-base font-semibold text-ink outline-none placeholder:text-ink-faint focus:border-sage focus:ring-2 focus:ring-sage-soft";
+  "min-h-14 w-full rounded-3xl bg-surface px-4 py-3 text-base font-medium text-ink outline-none placeholder:text-ink-faint focus:ring-2 focus:ring-coral/30";
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="flex flex-col gap-1.5">
-      <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-ink-faint">
+      <span className="text-xs font-medium text-ink-faint">
         {label}
       </span>
       {children}
@@ -211,7 +212,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 function Group({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <fieldset className="flex flex-col gap-1.5">
-      <legend className="mb-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-ink-faint">
+      <legend className="mb-1.5 text-xs font-medium text-ink-faint">
         {label}
       </legend>
       {children}

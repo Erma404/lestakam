@@ -1,5 +1,6 @@
 "use client";
 
+import { Icon } from "./Icon";
 import { useSaveConfirmation } from "./SaveConfirmation";
 import { useMemo, useState } from "react";
 import { Avatar } from "./Avatar";
@@ -85,10 +86,10 @@ export function CalendarView({ initialIso }: CalendarViewProps) {
   function handleSave(values: NewEvent) {
     if (editing) {
       updateEvent(baseEventId(editing.id), values);
-      confirm({ emoji: "✏️", title: "Événement modifié", detail: values.title });
+      confirm({ title: "Événement modifié", detail: values.title });
     } else {
       addEvent(values);
-      confirm({ emoji: "📅", title: "Ajouté au calendrier", detail: values.title });
+      confirm({ title: "Ajouté au calendrier", detail: values.title });
     }
     setEditing(null);
     setCreating(null);
@@ -97,7 +98,7 @@ export function CalendarView({ initialIso }: CalendarViewProps) {
   function handleDelete() {
     if (!editing) return;
     deleteEvent(baseEventId(editing.id));
-    confirm({ emoji: "🗑️", title: "Événement supprimé", detail: editing.title });
+    confirm({ kind: "deleted", title: "Événement supprimé", detail: editing.title });
     setEditing(null);
   }
 
@@ -124,10 +125,8 @@ export function CalendarView({ initialIso }: CalendarViewProps) {
     <div className="mx-auto flex max-w-6xl flex-col gap-4 p-4 pb-28 sm:p-6 md:pb-6 lg:p-8">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-ink-faint">
-            {view === "jour" ? "Vue par jour" : view === "mois" ? "Vue par mois" : "Vue par semaine"}
-          </p>
-          <h1 className="font-display text-3xl font-bold text-ink sm:text-4xl">
+          <p className="text-base text-ink-soft">Calendrier de la famille</p>
+          <h1 className="font-display text-3xl font-medium text-ink sm:text-4xl">
             {periodLabel}
           </h1>
         </div>
@@ -136,14 +135,14 @@ export function CalendarView({ initialIso }: CalendarViewProps) {
             type="button"
             onClick={goPrevious}
             aria-label={`${MODE_LABEL[view]} précédent·e`}
-            className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-lg font-bold text-ink-soft hover:bg-cream-deep"
+            className="flex h-11 w-11 items-center justify-center rounded-full bg-surface text-ink hover:bg-cream-deep"
           >
-            ‹
+            <Icon name="arrowRight" className="h-5 w-5 rotate-180" />
           </button>
           <button
             type="button"
             onClick={() => setAnchor(today)}
-            className="min-h-11 rounded-pill bg-white px-4 text-sm font-extrabold text-ink-soft hover:bg-cream-deep"
+            className="min-h-11 rounded-pill bg-surface px-4 text-sm font-semibold text-ink-soft hover:bg-cream-deep"
           >
             Aujourd&apos;hui
           </button>
@@ -151,16 +150,16 @@ export function CalendarView({ initialIso }: CalendarViewProps) {
             type="button"
             onClick={goNext}
             aria-label={`${MODE_LABEL[view]} suivant·e`}
-            className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-lg font-bold text-ink-soft hover:bg-cream-deep"
+            className="flex h-11 w-11 items-center justify-center rounded-full bg-surface text-ink hover:bg-cream-deep"
           >
-            ›
+            <Icon name="arrowRight" className="h-5 w-5" />
           </button>
           <button
             type="button"
             onClick={() => setCreating({ date: view === "mois" ? today : anchor })}
-            className="ml-1 inline-flex min-h-11 items-center gap-1 btn-pop btn-pop-sage px-5 text-sm font-extrabold "
+            className="ml-1 inline-flex min-h-11 items-center gap-1 btn-pop btn-pop-coral px-5 text-sm font-semibold "
           >
-            <span aria-hidden>＋</span> Ajouter
+            <Icon name="plus" className="h-4 w-4" strokeWidth={2.2} /> Ajouter
           </button>
         </div>
       </header>
@@ -171,45 +170,40 @@ export function CalendarView({ initialIso }: CalendarViewProps) {
             type="button"
             onClick={() => setFilterMember(null)}
             aria-pressed={filterMember === null}
-            className={`min-h-11 rounded-pill border-2 px-4 text-sm font-extrabold ${
-              filterMember === null
-                ? "border-ink-faint bg-cream-deep text-ink"
-                : "border-line bg-white text-ink-soft"
+            className={`min-h-11 rounded-pill px-4 text-sm font-medium ${
+              filterMember === null ? "bg-forest text-white" : "bg-surface text-ink hover:bg-cream-deep"
             }`}
           >
             Toute la famille
           </button>
           {MEMBERS.map((member) => {
             const selected = filterMember === member.id;
-            const accent = accentClasses(member.accent);
             return (
               <button
                 key={member.id}
                 type="button"
                 onClick={() => setFilterMember(selected ? null : member.id)}
                 aria-pressed={selected}
-                className={`flex min-h-11 items-center gap-2 rounded-pill border-2 px-3 text-sm font-extrabold ${
-                  selected
-                    ? `${accent.soft} border-ink-faint text-ink`
-                    : "border-line bg-white text-ink-soft"
+                className={`flex min-h-11 items-center gap-2 rounded-pill py-1 pl-1 pr-4 text-sm font-medium ${
+                  selected ? "bg-forest text-white" : "bg-surface text-ink hover:bg-cream-deep"
                 }`}
               >
-                <Avatar member={member} size="sm" />
+                <Avatar member={member} size="xs" />
                 {member.firstName}
               </button>
             );
           })}
         </div>
 
-        <div className="inline-flex shrink-0 rounded-pill bg-cream-deep p-1">
+        <div className="inline-flex shrink-0 rounded-pill bg-surface p-1">
           {(Object.keys(MODE_LABEL) as CalendarMode[]).map((mode) => (
             <button
               key={mode}
               type="button"
               onClick={() => setView(mode)}
               aria-pressed={view === mode}
-              className={`min-h-9 rounded-pill px-4 text-xs font-extrabold ${
-                view === mode ? "bg-white text-ink shadow-sm" : "text-ink-soft hover:text-ink"
+              className={`min-h-10 rounded-pill px-4 text-sm font-medium ${
+                view === mode ? "bg-coral text-white" : "text-ink-soft hover:text-ink"
               }`}
             >
               {MODE_LABEL[mode]}
@@ -285,12 +279,12 @@ function WeekGrid({ week, today, events, filterMember, now, onEditEvent, onCreat
   const nowMinutes = now.getHours() * 60 + now.getMinutes();
 
   return (
-    <div className="max-h-[620px] overflow-auto rounded-card border border-line bg-white">
+    <div className="max-h-[620px] overflow-auto rounded-card bg-surface">
       <div style={{ minWidth: TIME_COLUMN_WIDTH + week.length * DAY_COLUMN_MIN_WIDTH }}>
         {/* En-têtes des jours */}
-        <div className="sticky top-0 z-30 flex border-b border-line bg-white">
+        <div className="sticky top-0 z-30 flex border-b border-line bg-surface">
           <div
-            className="sticky left-0 z-30 shrink-0 bg-white"
+            className="sticky left-0 z-30 shrink-0 bg-surface"
             style={{ width: TIME_COLUMN_WIDTH }}
           />
           {week.map((date) => {
@@ -302,15 +296,15 @@ function WeekGrid({ week, today, events, filterMember, now, onEditEvent, onCreat
                 style={{ minWidth: DAY_COLUMN_MIN_WIDTH }}
               >
                 <span
-                  className={`text-[11px] font-bold uppercase tracking-[0.1em] ${
-                    isToday ? "text-sage" : "text-ink-faint"
+                  className={`text-xs font-medium ${
+                    isToday ? "text-coral" : "text-ink-faint"
                   }`}
                 >
                   {formatWeekdayShort(date)}
                 </span>
                 <span
-                  className={`flex h-8 w-8 items-center justify-center rounded-full text-lg font-extrabold ${
-                    isToday ? "bg-sage text-white" : "text-ink"
+                  className={`flex h-8 w-8 items-center justify-center rounded-full text-lg font-semibold ${
+                    isToday ? "bg-coral text-white" : "text-ink"
                   }`}
                 >
                   {formatDayNumber(date)}
@@ -326,7 +320,7 @@ function WeekGrid({ week, today, events, filterMember, now, onEditEvent, onCreat
         {/* Grille horaire */}
         <div className="flex">
           <div
-            className="sticky left-0 z-10 shrink-0 bg-white"
+            className="sticky left-0 z-10 shrink-0 bg-surface"
             style={{ width: TIME_COLUMN_WIDTH }}
           >
             {hours.map((hour) => (
@@ -335,7 +329,7 @@ function WeekGrid({ week, today, events, filterMember, now, onEditEvent, onCreat
                 className="relative text-right"
                 style={{ height: HOUR_HEIGHT }}
               >
-                <span className="absolute -top-2 right-1.5 text-[10px] font-bold text-ink-faint">
+                <span className="absolute -top-2 right-1.5 text-xs font-medium text-ink-faint">
                   {String(hour).padStart(2, "0")}:00
                 </span>
               </div>
@@ -377,12 +371,12 @@ function AllDayRow({
   if (!hasAny) return null;
 
   return (
-    <div className="sticky top-[60px] z-20 flex border-b border-line bg-cream-deep/40">
+    <div className="sticky top-[60px] z-20 flex border-b border-line bg-surface">
       <div
-        className="sticky left-0 z-20 flex shrink-0 items-center justify-end bg-cream-deep/40 pr-1.5"
+        className="sticky left-0 z-20 flex shrink-0 items-center justify-end bg-surface pr-1.5"
         style={{ width: TIME_COLUMN_WIDTH }}
       >
-        <span className="text-[9px] font-bold text-ink-faint">journée</span>
+        <span className="text-[11px] font-medium text-ink-faint">journée</span>
       </div>
       {week.map((date) => {
         const dayEvents = eventsForDay(events, date, filterMember).filter((event) => !event.startTime);
@@ -499,13 +493,13 @@ function EventBlock({
       type="button"
       onClick={onClick}
       style={{ position: "absolute", ...style }}
-      className={`z-[1] overflow-hidden rounded-lg ${accent.soft} px-1.5 py-0.5 text-left shadow-sm hover:brightness-97`}
+      className={`z-[1] overflow-hidden rounded-lg ${accent.soft} px-1.5 py-0.5 text-left hover:brightness-97`}
     >
-      <span className="block truncate text-[11px] font-extrabold leading-tight text-ink">
+      <span className="block truncate text-xs font-semibold leading-tight text-ink">
         {event.title}
       </span>
       {event.startTime ? (
-        <span className="block truncate text-[9px] font-semibold leading-tight text-ink-soft">
+        <span className="block truncate text-[11px] font-medium leading-tight text-ink-soft">
           {event.startTime}
         </span>
       ) : null}
@@ -526,7 +520,7 @@ function EventChip({ event, onClick }: { event: CalendarEvent; onClick: () => vo
       title={`${event.title} · ${CATEGORY_LABEL[event.category]}`}
       className={`flex items-center gap-1 rounded-md ${accent.soft} px-1.5 py-0.5 text-left hover:brightness-97`}
     >
-      <span className="truncate text-[11px] font-extrabold text-ink">{event.title}</span>
+      <span className="truncate text-xs font-semibold text-ink">{event.title}</span>
       {people.length > 0 ? (
         <span className="flex -space-x-1.5">
           {people.slice(0, 3).map((member) => (

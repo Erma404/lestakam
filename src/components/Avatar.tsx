@@ -4,11 +4,12 @@ import { accentClasses } from "@/lib/accents";
 
 interface AvatarProps {
   member: Member;
-  size?: "sm" | "md" | "lg";
+  size?: "xs" | "sm" | "md" | "lg";
   selected?: boolean;
 }
 
 const SIZES = {
+  xs: { box: "h-9 w-9", emoji: "text-lg", pixels: 36, ring: "p-1" },
   sm: { box: "h-10 w-10", emoji: "text-xl", pixels: 40, ring: "p-1.5" },
   md: { box: "h-14 w-14", emoji: "text-3xl", pixels: 56, ring: "p-2" },
   lg: { box: "h-20 w-20 sm:h-24 sm:w-24", emoji: "text-4xl sm:text-5xl", pixels: 96, ring: "p-3 sm:p-4" },
@@ -26,7 +27,7 @@ export function Avatar({ member, size = "md", selected = false }: AvatarProps) {
         // couleur par membre reste bien visible tout autour, pas juste un
         // mince liseré.
         member.photoUrl ? dimensions.ring : ""
-      } ${selected ? `ring-3 ring-offset-2 ring-offset-cream ${accent.ring}` : ""}`}
+      } ${selected ? `ring-3 ring-offset-2 ring-offset-surface ${accent.ring}` : ""}`}
     >
       {member.photoUrl ? (
         <Image

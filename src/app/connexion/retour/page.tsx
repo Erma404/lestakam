@@ -55,24 +55,24 @@ export default function SignInReturnPage() {
   return (
     <main className="flex min-h-screen items-center justify-center p-6 text-center">
       {failed ? (
-        <div className="max-w-sm rounded-card border border-line bg-white/80 p-6">
+        <div className="max-w-sm rounded-card bg-surface/80 p-6">
           <p className="text-3xl" aria-hidden>
             🔁
           </p>
-          <h1 className="mt-2 text-xl font-extrabold text-ink">Ce lien n&apos;est plus valable</h1>
-          <p className="mt-1 text-sm font-semibold text-ink-soft">
+          <h1 className="mt-2 text-xl font-semibold text-ink">Ce lien n&apos;est plus valable</h1>
+          <p className="mt-1 text-sm font-medium text-ink-soft">
             Les liens de connexion expirent au bout d&apos;un moment, et ne servent qu&apos;une
             fois. Demandez-en simplement un nouveau.
           </p>
           <Link
             href="/"
-            className="mt-4 inline-flex min-h-11 items-center rounded-pill bg-sage px-5 text-sm font-extrabold text-white"
+            className="mt-4 inline-flex min-h-11 items-center rounded-pill bg-sage px-5 text-sm font-semibold text-white"
           >
             Recevoir un nouveau lien
           </Link>
         </div>
       ) : (
-        <p className="text-base font-bold text-ink-soft">Connexion en cours…</p>
+        <p className="text-base font-medium text-ink-soft">Connexion en cours…</p>
       )}
     </main>
   );

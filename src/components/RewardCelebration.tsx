@@ -8,7 +8,7 @@ import { todayKey } from "@/lib/dates";
 import { memberById } from "@/lib/family";
 import type { RewardGoal } from "@/lib/types";
 
-const CONFETTI_COLORS = ["#f4c95d", "#8fb996", "#e8a0a6", "#9cc3e4", "#c3a6e0", "#e08a5f"];
+const CONFETTI_COLORS = ["#f2c14e", "#e8603f", "#1f6b45", "#7ba7d9", "#e58fa4", "#a585d0"];
 
 /**
  * Fête l'objectif atteint, quelle que soit la page ouverte : c'est souvent
@@ -121,25 +121,25 @@ function CelebrationOverlay({ goal, onClose }: { goal: RewardGoal; onClose: () =
         className="animate-pop-in relative w-full max-w-md rounded-3xl bg-cream px-6 py-8 text-center"
         onClick={(event) => event.stopPropagation()}
       >
-        <p className="text-7xl" aria-hidden>
+        <p className="mx-auto flex h-28 w-28 items-center justify-center rounded-full bg-sun-soft text-7xl" aria-hidden>
           {goal.emoji}
         </p>
-        <h2 id="celebration-title" className="mt-4 font-display text-4xl font-bold text-ink">
+        <h2 id="celebration-title" className="mt-4 font-display text-4xl font-medium text-ink">
           Bravo {firstName} !
         </h2>
-        <p className="mt-3 text-lg font-bold text-ink">
+        <p className="mt-3 text-lg font-medium text-ink">
           Tu as gagné : {goal.label}
         </p>
-        <p className="mt-1 text-base font-semibold text-ink-soft">
-          {goal.starsRequired} ⭐ récoltées. Continue tes efforts !
+        <p className="mt-1 text-base font-medium text-ink-soft">
+          {goal.starsRequired} étoiles récoltées. Continue tes efforts !
         </p>
         <button
           type="button"
           onClick={onClose}
           autoFocus
-          className="mt-6 inline-flex min-h-14 items-center btn-pop btn-pop-sage px-8 text-base font-extrabold"
+          className="mt-6 inline-flex min-h-14 items-center btn-pop btn-pop-coral px-8 text-base font-semibold"
         >
-          🎉 Youpi !
+          Youpi !
         </button>
       </div>
     </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
+import { Icon } from "./Icon";
 
 const HOURS = Array.from({ length: 24 }, (_, hour) => String(hour).padStart(2, "0"));
 const MINUTES = Array.from({ length: 60 }, (_, minute) => String(minute).padStart(2, "0"));
@@ -99,7 +100,7 @@ export function TimePicker({ value, onChange, labelId, suggestedHour }: TimePick
               data-value={item}
               aria-selected={isSelected}
               onClick={() => onPick(item)}
-              className={`min-h-11 shrink-0 snap-start rounded-2xl text-base font-extrabold tabular-nums transition-colors ${
+              className={`min-h-11 shrink-0 snap-start rounded-2xl text-base font-semibold tabular-nums transition-colors ${
                 isSelected ? "bg-sage text-white" : "text-ink hover:bg-sage-soft"
               }`}
             >
@@ -120,20 +121,18 @@ export function TimePicker({ value, onChange, labelId, suggestedHour }: TimePick
         aria-expanded={open}
         aria-haspopup="listbox"
         aria-labelledby={labelId ? `${labelId} ${baseId}-trigger` : undefined}
-        className={`flex min-h-14 w-full items-center justify-between gap-2 rounded-3xl border bg-white px-4 py-3 text-left outline-none transition-colors focus-visible:ring-2 focus-visible:ring-sage-soft ${
+        className={`flex min-h-14 w-full items-center justify-between gap-2 rounded-3xl border bg-surface px-4 py-3 text-left outline-none transition-colors focus-visible:ring-2 focus-visible:ring-sage-soft ${
           open ? "border-sage ring-2 ring-sage-soft" : "border-line"
         }`}
       >
-        <span className={`text-base font-semibold tabular-nums ${value ? "text-ink" : "text-ink-faint"}`}>
+        <span className={`text-base font-medium tabular-nums ${value ? "text-ink" : "text-ink-faint"}`}>
           {value || "--:--"}
         </span>
-        <span aria-hidden className="text-lg">
-          🕒
-        </span>
+        <Icon name="clock" className="h-5 w-5 text-coral" />
       </button>
 
       {open ? (
-        <div className="animate-pop-in absolute left-0 top-full z-20 mt-2 flex w-full min-w-44 flex-col overflow-hidden rounded-3xl border border-line bg-cream shadow-[0_6px_0_var(--color-line)]">
+        <div className="animate-pop-in absolute left-0 top-full z-20 mt-2 flex w-full min-w-44 flex-col overflow-hidden rounded-3xl border border-line bg-cream">
           <div className="grid grid-cols-2 divide-x divide-line">
             {renderColumn(HOURS, hour ?? null, pickHour, hoursRef, "Heures")}
             {renderColumn(MINUTES, minute ?? null, pickMinute, minutesRef, "Minutes")}
@@ -145,7 +144,7 @@ export function TimePicker({ value, onChange, labelId, suggestedHour }: TimePick
                 onChange("");
                 setOpen(false);
               }}
-              className="min-h-11 border-t border-line text-sm font-bold text-ink-soft hover:bg-cream-deep"
+              className="min-h-11 border-t border-line text-sm font-medium text-ink-soft hover:bg-cream-deep"
             >
               Sans heure
             </button>

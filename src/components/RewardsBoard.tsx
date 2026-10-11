@@ -1,14 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { Card, CardTitle } from "./Card";
+import { Icon } from "./Icon";
 import { useSaveConfirmation } from "./SaveConfirmation";
-import { ProgressBar } from "./RitualsBoard";
 import { RewardGoalForm } from "./RewardGoalForm";
 import { memberById } from "@/lib/family";
 import { useStars } from "@/lib/useStars";
 import { useRewardGoals } from "@/lib/useRewardGoals";
-import { achievedGoals, nextGoal, starsThisMonth, starsThisWeek } from "@/lib/rewards";
+import { nextGoal, starsThisMonth, starsThisWeek } from "@/lib/rewards";
 import { formatLongDate, todayKey } from "@/lib/dates";
 import { useNow } from "@/lib/useNow";
 import type { RewardGoal } from "@/lib/types";
@@ -30,109 +29,117 @@ export function RewardsBoard({ initialIso }: RewardsBoardProps) {
   const [confirmingReset, setConfirmingReset] = useState(false);
 
   const upcoming = nextGoal(goals);
-  const unlockedGoals = achievedGoals(goals);
   const khloe = memberById("khloe");
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-5 p-4 pb-28 sm:p-6 md:pb-6 lg:p-8">
-      <header className="flex flex-wrap items-end justify-between gap-3">
+      <header className="flex flex-wrap items-end justify-between gap-3 pt-2">
         <div>
-          <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-ink-faint">
-            {khloe?.firstName ?? "Khloé"} · {formatLongDate(today)}
-          </p>
-          <h1 className="font-display text-3xl font-bold text-ink sm:text-4xl">
-            ⭐ Récompenses
+          <p className="text-base text-ink-soft">{formatLongDate(today)}</p>
+          <h1 className="font-display text-3xl font-medium text-ink sm:text-4xl">
+            Les récompenses de {khloe?.firstName ?? "Khloé"}
           </h1>
         </div>
         <button
           type="button"
           onClick={() => setCreating(true)}
-          className="inline-flex min-h-14 items-center gap-2 btn-pop btn-pop-sage px-6 text-base font-extrabold "
+          className="btn-pop btn-pop-coral min-h-12 px-5 text-base"
         >
-          <span aria-hidden>＋</span> Objectif
+          <Icon name="plus" className="h-5 w-5" strokeWidth={2.2} /> Objectif
         </button>
       </header>
 
       <div className="grid grid-cols-3 gap-3">
-        <Counter label="Cette semaine" value={starsThisWeek(entries, today)} />
+        <Counter label="Cette semaine" value={starsThisWeek(entries, today)} highlight />
         <Counter label="Ce mois-ci" value={starsThisMonth(entries, today)} />
         <Counter label="Depuis le début" value={total} />
       </div>
 
       {upcoming ? (
-        <Card className="bg-white/70">
-          <CardTitle eyebrow="Prochain objectif" title={`${upcoming.emoji} ${upcoming.label}`} />
-          <ProgressBar value={total} max={upcoming.starsRequired} />
-          <p className="mt-2 text-sm font-semibold text-ink-soft">
-            Encore {Math.max(upcoming.starsRequired - total, 0)} étoiles pour débloquer cette
-            récompense.
+        <section className="rounded-card bg-sun p-5 sm:p-6" aria-labelledby="objectif-en-cours">
+          <div className="flex items-center gap-4">
+            <span aria-hidden className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-surface text-4xl">
+              {upcoming.emoji}
+            </span>
+            <div className="min-w-0">
+              <p className="text-sm text-ink">Objectif en cours</p>
+              <h2 id="objectif-en-cours" className="font-display text-2xl font-medium text-ink">
+                {upcoming.label}
+              </h2>
+            </div>
+          </div>
+          <div className="mt-4 h-4 overflow-hidden rounded-pill bg-surface" role="progressbar" aria-valuenow={total} aria-valuemin={0} aria-valuemax={upcoming.starsRequired} aria-label={`Progression vers ${upcoming.label}`}>
+            <div className="h-full rounded-pill bg-coral transition-[width] duration-500" style={{ width: `${Math.min(Math.round((total / upcoming.starsRequired) * 100), 100)}%` }} />
+          </div>
+          <p className="mt-2 text-base text-ink">
+            {total} / {upcoming.starsRequired} étoiles · encore{" "}
+            {Math.max(upcoming.starsRequired - total, 0)} pour la débloquer
           </p>
-        </Card>
+        </section>
       ) : null}
 
-      <Card>
-        <CardTitle title="Tous les objectifs" />
+      <section aria-labelledby="tous-objectifs">
+        <h2 id="tous-objectifs" className="mb-3 font-display text-xl font-medium text-ink">
+          Le chemin des récompenses
+        </h2>
         {goals.length === 0 ? (
-          <p className="px-2 py-6 text-center text-sm font-semibold text-ink-soft">
-            Aucun objectif pour le moment.
+          <p className="rounded-card bg-surface p-5 text-base text-ink-soft">
+            Aucun objectif pour le moment. Ajoutez-en un pour motiver Khloé !
           </p>
         ) : (
-          <ul className="flex flex-col gap-2">
-            {goals.map((goal) => (
-              <li key={goal.id}>
-                <button
-                  type="button"
-                  onClick={() => setEditing(goal)}
-                  className={`flex w-full items-center gap-3 rounded-3xl px-4 py-3 text-left ${
-                    goal.achievedOn ? "bg-sage-soft" : "bg-white border border-line"
-                  }`}
-                >
-                  <span className="text-2xl" aria-hidden>
-                    {goal.emoji}
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-base font-extrabold text-ink">
-                      {goal.label}
-                    </span>
-                    <span className="block text-xs font-semibold text-ink-soft">
-                      {goal.starsRequired} ⭐
-                      {goal.achievedOn ? ` · débloqué le ${formatLongDate(goal.achievedOn)}` : ""}
-                    </span>
-                  </span>
-                  {goal.achievedOn ? (
-                    <span aria-hidden className="text-xl">
-                      ✓
-                    </span>
-                  ) : null}
-                </button>
-              </li>
-            ))}
+          <ul className="flex flex-col divide-y divide-dashed divide-line rounded-card bg-surface px-4 sm:px-6">
+            {[...goals]
+              .sort((a, b) => a.starsRequired - b.starsRequired)
+              .map((goal) => {
+                const unlocked = Boolean(goal.achievedOn);
+                const percent = Math.min(Math.round((total / goal.starsRequired) * 100), 100);
+                return (
+                  <li key={goal.id}>
+                    <button
+                      type="button"
+                      onClick={() => setEditing(goal)}
+                      className="flex w-full items-center gap-4 py-4 text-left"
+                    >
+                      <span
+                        aria-hidden
+                        className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-full text-3xl ${
+                          unlocked ? "bg-sage-soft" : "bg-cream-deep"
+                        } ${unlocked || percent >= 100 ? "" : "grayscale-[0.6]"}`}
+                      >
+                        {goal.emoji}
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-base font-medium text-ink">{goal.label}</span>
+                        {unlocked ? (
+                          <span className="block text-sm text-sage">
+                            Débloquée le {formatLongDate(goal.achievedOn ?? today)}
+                          </span>
+                        ) : (
+                          <>
+                            <span className="mt-1.5 block h-1.5 overflow-hidden rounded-pill bg-cream-deep" aria-hidden>
+                              <span className="block h-full rounded-pill bg-sun" style={{ width: `${percent}%` }} />
+                            </span>
+                            <span className="mt-1 block text-sm text-ink-soft tabular-nums">
+                              {Math.min(total, goal.starsRequired)} / {goal.starsRequired} étoiles
+                            </span>
+                          </>
+                        )}
+                      </span>
+                      {unlocked ? (
+                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-sage text-white">
+                          <Icon name="check" className="h-4 w-4" strokeWidth={2.6} />
+                        </span>
+                      ) : null}
+                    </button>
+                  </li>
+                );
+              })}
           </ul>
         )}
-      </Card>
-
-      {unlockedGoals.length > 0 ? (
-        <Card>
-          <CardTitle eyebrow="Historique" title="Récompenses débloquées" />
-          <ul className="flex flex-col gap-2">
-            {unlockedGoals.map((goal) => (
-              <li
-                key={goal.id}
-                className="flex items-center gap-3 rounded-3xl bg-cream-deep/60 px-4 py-3 text-sm font-bold text-ink"
-              >
-                <span aria-hidden>{goal.emoji}</span>
-                {goal.label}
-                <span className="ml-auto text-xs font-semibold text-ink-faint">
-                  {formatLongDate(goal.achievedOn ?? today)}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </Card>
-      ) : null}
+      </section>
 
       {starsShared ? null : confirmingReset ? (
-        <p className="flex flex-wrap items-center gap-3 text-sm font-bold text-ink">
+        <p className="flex flex-wrap items-center gap-3 text-sm font-medium text-ink">
           Remettre le compteur d&apos;étoiles à zéro ?
           <button
             type="button"
@@ -140,14 +147,14 @@ export function RewardsBoard({ initialIso }: RewardsBoardProps) {
               resetStars();
               setConfirmingReset(false);
             }}
-            className="min-h-9 btn-pop btn-pop-terracotta px-4 text-xs font-extrabold "
+            className="min-h-9 btn-pop btn-pop-coral px-4 text-xs font-semibold "
           >
             Oui, remettre à zéro
           </button>
           <button
             type="button"
             onClick={() => setConfirmingReset(false)}
-            className="min-h-9 rounded-pill bg-white px-4 text-xs font-extrabold text-ink-soft"
+            className="min-h-9 rounded-pill bg-surface px-4 text-xs font-semibold text-ink-soft"
           >
             Non
           </button>
@@ -156,7 +163,7 @@ export function RewardsBoard({ initialIso }: RewardsBoardProps) {
         <button
           type="button"
           onClick={() => setConfirmingReset(true)}
-          className="self-start text-xs font-bold text-ink-faint underline hover:text-ink-soft"
+          className="self-start text-xs font-medium text-ink-faint underline hover:text-ink-soft"
         >
           Remettre le compteur d&apos;étoiles à zéro
         </button>
@@ -169,10 +176,10 @@ export function RewardsBoard({ initialIso }: RewardsBoardProps) {
           onSave={(values) => {
             if (editing) {
               updateGoal(editing.id, values);
-              confirm({ emoji: "✏️", title: "Objectif modifié", detail: values.label });
+              confirm({ title: "Objectif modifié", detail: values.label });
             } else {
               addGoal(values);
-              confirm({ emoji: values.emoji || "⭐", title: "Objectif ajouté", detail: values.label });
+              confirm({ title: "Objectif ajouté", detail: values.label });
             }
             setEditing(null);
             setCreating(false);
@@ -181,7 +188,7 @@ export function RewardsBoard({ initialIso }: RewardsBoardProps) {
             editing
               ? () => {
                   deleteGoal(editing.id);
-                  confirm({ emoji: "🗑️", title: "Objectif supprimé", detail: editing.label });
+                  confirm({ kind: "deleted", title: "Objectif supprimé", detail: editing.label });
                   setEditing(null);
                 }
               : undefined
@@ -198,11 +205,12 @@ export function RewardsBoard({ initialIso }: RewardsBoardProps) {
   );
 }
 
-function Counter({ label, value }: { label: string; value: number }) {
+function Counter({ label, value, highlight = false }: { label: string; value: number; highlight?: boolean }) {
   return (
-    <div className="rounded-card bg-white/80 border border-line px-3 py-3 text-center">
-      <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-ink-faint">{label}</p>
-      <p className="text-2xl font-extrabold text-ink">{value}</p>
+    <div className={`rounded-card px-3 py-4 text-center ${highlight ? "bg-forest text-white" : "bg-surface text-ink"}`}>
+      <p className={`text-sm ${highlight ? "text-white/80" : "text-ink-soft"}`}>{label}</p>
+      <p className="font-display text-3xl font-medium tabular-nums">{value}</p>
+      <p className={`text-xs ${highlight ? "text-white/80" : "text-ink-soft"}`}>étoiles</p>
     </div>
   );
 }

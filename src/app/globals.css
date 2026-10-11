@@ -1,30 +1,35 @@
 @import "tailwindcss";
 
 @theme {
-  /* Fonds chaleureux */
-  --color-cream: #faf6ef;
-  --color-cream-deep: #f3ece0;
-  --color-ink: #2f2a24;
-  --color-ink-soft: #6f675c;
-  --color-ink-faint: #a49a8c;
-  --color-line: #e8e0d3;
+  /* Fonds — pêche clair façon Jow, surfaces blanches légèrement chaudes */
+  --color-cream: oklch(0.973 0.018 62);
+  --color-cream-deep: oklch(0.94 0.03 60);
+  --color-surface: oklch(0.995 0.004 70);
+  --color-ink: oklch(0.26 0.02 40);
+  --color-ink-soft: oklch(0.47 0.02 45);
+  --color-ink-faint: oklch(0.6 0.02 50);
+  --color-line: oklch(0.91 0.02 60);
 
-  /* Accents doux */
-  --color-sun: #f6c453;
-  --color-sun-soft: #fdf1d2;
-  --color-sage: #7fa87f;
-  --color-sage-soft: #e4efe2;
-  --color-terracotta: #d98A6a;
-  --color-terracotta-soft: #fbe6dc;
-  --color-sky: #7aa7c7;
-  --color-sky-soft: #e2eef6;
-  --color-lilac: #a08cc0;
-  --color-lilac-soft: #ece6f5;
-  --color-rose: #d98aa8;
-  --color-rose-soft: #fae3ec;
+  /* Action principale : corail. Marque et « fait » : vert forêt. */
+  --color-coral: oklch(0.66 0.19 33);
+  --color-coral-soft: oklch(0.94 0.04 35);
+  --color-forest: oklch(0.4 0.085 155);
+  --color-sage: oklch(0.52 0.1 155);
+  --color-sage-soft: oklch(0.94 0.035 155);
 
-  /* Coins bien arrondis, style convivial */
-  --radius-card: 1.75rem;
+  /* Couleurs des membres et des catégories, en aplats doux */
+  --color-sun: oklch(0.84 0.14 82);
+  --color-sun-soft: oklch(0.955 0.05 88);
+  --color-terracotta: oklch(0.66 0.19 33);
+  --color-terracotta-soft: oklch(0.94 0.04 35);
+  --color-sky: oklch(0.66 0.1 240);
+  --color-sky-soft: oklch(0.945 0.03 240);
+  --color-lilac: oklch(0.6 0.11 305);
+  --color-lilac-soft: oklch(0.945 0.03 305);
+  --color-rose: oklch(0.68 0.13 5);
+  --color-rose-soft: oklch(0.945 0.035 5);
+
+  --radius-card: 1.5rem;
   --radius-pill: 999px;
 }
 
@@ -36,7 +41,7 @@ body {
 body {
   background-color: var(--color-cream);
   color: var(--color-ink);
-  font-family: var(--font-body), ui-rounded, "SF Pro Rounded", system-ui, sans-serif;
+  font-family: var(--font-body), system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -46,76 +51,60 @@ button,
   touch-action: manipulation;
 }
 
-/* Titre joufflu — appliqué aux titres pour casser la monotonie du corps de
-   texte, plutôt que d'empiler toute l'appli dans la même graisse de Nunito. */
+/* Titres : même famille que le texte (Lexend), un cran plus serrée. */
 .font-display {
-  font-family: var(--font-display), ui-rounded, "SF Pro Rounded", system-ui, sans-serif;
-  letter-spacing: -0.01em;
+  font-family: var(--font-body), system-ui, sans-serif;
+  letter-spacing: -0.02em;
 }
 
-/* Bouton « pop » — un aplat de couleur avec un bord bas plus sombre qui
-   s'écrase au clic, façon jouet en plastique plutôt que rectangle plat. */
+/* Bouton plein en pilule, façon Jow : aplat franc, pas d'ombre, il
+   s'enfonce légèrement sous le doigt. */
 .btn-pop {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.4em;
   border-radius: var(--radius-pill);
-  font-weight: 800;
+  font-weight: 500;
   color: white;
-  box-shadow: 0 4px 0 var(--btn-pop-shadow, rgba(0, 0, 0, 0.2));
-  transition: transform 0.12s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.12s ease,
-    filter 0.12s ease;
+  transition: transform 0.15s cubic-bezier(0.22, 1, 0.36, 1), filter 0.15s ease;
 }
 .btn-pop:hover:not(:disabled) {
   filter: brightness(1.05);
 }
 .btn-pop:active:not(:disabled) {
-  transform: translateY(3px);
-  box-shadow: 0 1px 0 var(--btn-pop-shadow, rgba(0, 0, 0, 0.2));
-}
-.btn-pop:disabled {
-  box-shadow: none;
+  transform: scale(0.97);
 }
 
-.btn-pop-sage {
-  background-color: var(--color-sage);
-  --btn-pop-shadow: color-mix(in oklch, var(--color-sage), black 28%);
+.btn-pop-coral {
+  background-color: var(--color-coral);
 }
-.btn-pop-terracotta {
-  background-color: var(--color-terracotta);
-  --btn-pop-shadow: color-mix(in oklch, var(--color-terracotta), black 28%);
+.btn-pop-forest {
+  background-color: var(--color-forest);
 }
 .btn-pop-sun {
   background-color: var(--color-sun);
   color: var(--color-ink);
-  --btn-pop-shadow: color-mix(in oklch, var(--color-sun), black 28%);
-}
-.btn-pop-lilac {
-  background-color: var(--color-lilac);
-  --btn-pop-shadow: color-mix(in oklch, var(--color-lilac), black 28%);
 }
 .btn-pop-ink {
   background-color: var(--color-ink);
-  --btn-pop-shadow: color-mix(in oklch, var(--color-ink), black 28%);
 }
 
 /* Légère élévation au survol, pour les tuiles cliquables (membres,
    jours de la semaine, objectifs…) — donne du relief sans surcharger. */
 .tile-pop {
-  transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.15s ease;
+  transition: transform 0.15s cubic-bezier(0.22, 1, 0.36, 1);
 }
-.tile-pop:hover {
-  transform: translateY(-3px);
+.tile-pop:active {
+  transform: scale(0.98);
 }
 
 @keyframes pop-in {
   0% {
-    transform: scale(0.7);
+    transform: scale(0.94);
     opacity: 0;
   }
-  70% {
-    transform: scale(1.06);
+  60% {
     opacity: 1;
   }
   100% {
@@ -123,7 +112,7 @@ button,
   }
 }
 .animate-pop-in {
-  animation: pop-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation: pop-in 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 /* Masque les barres de défilement sur la tablette, le défilement reste actif */
@@ -145,5 +134,31 @@ button,
   *::after {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
+  }
+}
+
+/* Le « +1 étoile » qui s'envole au-dessus d'un rituel validé. */
+@keyframes star-burst {
+  0% {
+    transform: translateY(0) scale(0.8);
+    opacity: 0;
+  }
+  20% {
+    transform: translateY(-8px) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-36px) scale(1);
+    opacity: 0;
+  }
+}
+.animate-star-burst {
+  animation: star-burst 1.1s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-star-burst,
+  .animate-pop-in {
+    animation-duration: 0.01ms;
   }
 }

@@ -73,6 +73,11 @@ export interface CalendarEvent {
   memberIds: MemberId[];
   /** Répétition hebdomadaire : l'événement réapparaît chaque semaine le même jour. */
   repeatsWeekly?: boolean;
+  /**
+   * Avec une répétition : jours de la semaine concernés (0 = dimanche … 6 =
+   * samedi), ex. l'école du lundi au vendredi. Absent : le jour de `date`.
+   */
+  repeatDays?: number[];
   /** Avec une répétition : sautée pendant les vacances scolaires (zone C) et les jours fériés. */
   skipSchoolHolidays?: boolean;
   notes?: string;

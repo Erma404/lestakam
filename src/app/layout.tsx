@@ -1,27 +1,20 @@
 import type { Metadata, Viewport } from "next";
-import { Baloo_2, Nunito } from "next/font/google";
+import { Lexend } from "next/font/google";
 import { AppShell } from "@/components/AppShell";
 import { SessionProvider } from "@/lib/supabase/session";
 import "./globals.css";
 
-const nunito = Nunito({
+// Une seule famille, géométrique et ronde, très lisible de loin sur la
+// tablette de la cuisine (référence : l'application Jow).
+const lexend = Lexend({
   variable: "--font-body",
   subsets: ["latin"],
   display: "swap",
 });
 
-// Titres joufflus et arrondis, pour donner à l'appli un vrai grain de fantaisie
-// plutôt que de tout empiler dans la même graisse de Nunito.
-const baloo = Baloo_2({
-  variable: "--font-display",
-  subsets: ["latin"],
-  weight: ["600", "700", "800"],
-  display: "swap",
-});
-
 export const metadata: Metadata = {
   title: "LesTakam",
-  description: "Le tableau de bord de la famille : calendrier, rituels, repas et météo.",
+  description: "Le tableau de bord de la famille : calendrier, rituels, courses et météo.",
   applicationName: "LesTakam",
   appleWebApp: {
     capable: true,
@@ -31,7 +24,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#faf6ef",
+  themeColor: "#fdf3ec",
   width: "device-width",
   initialScale: 1,
   // La tablette de la cuisine reste sur un affichage stable, sans zoom accidentel.
@@ -45,7 +38,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="fr">
-      <body className={`${nunito.variable} ${baloo.variable} antialiased`}>
+      <body className={`${lexend.variable} antialiased`}>
         <SessionProvider>
           <AppShell>{children}</AppShell>
         </SessionProvider>

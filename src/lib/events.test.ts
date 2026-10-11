@@ -217,3 +217,24 @@ describe("expandEvents hors vacances scolaires", () => {
     ).toEqual(["2026-10-17", "2026-10-24"]);
   });
 });
+
+describe("expandEvents sur plusieurs jours", () => {
+  it("répète l'école du lundi au vendredi, hors vacances", () => {
+    const ecole: CalendarEvent = {
+      id: "ecole",
+      title: "École",
+      date: "2026-10-09",
+      category: "ecole",
+      memberIds: ["khloe"],
+      repeatsWeekly: true,
+      repeatDays: [1, 2, 3, 4, 5],
+      skipSchoolHolidays: true,
+    };
+    const days = ["2026-10-11", "2026-10-12", "2026-10-13", "2026-10-16", "2026-10-17", "2026-10-19"];
+    expect(expandEvents([ecole], days).map((event) => event.date)).toEqual([
+      "2026-10-12",
+      "2026-10-13",
+      "2026-10-16",
+    ]);
+  });
+});

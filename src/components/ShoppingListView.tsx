@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Card, CardTitle } from "./Card";
 import { ShoppingItemForm } from "./ShoppingItemForm";
+import { Icon } from "./Icon";
 import { useSaveConfirmation } from "./SaveConfirmation";
 import { groupByAisle, remainingCount } from "@/lib/shopping";
 import { useShoppingList } from "@/lib/useShoppingList";
@@ -31,77 +32,68 @@ export function ShoppingListView() {
     <div className="mx-auto flex max-w-2xl flex-col gap-5 p-4 pb-28 sm:p-6 md:pb-6 lg:p-8">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-ink-faint">
-            {left === 0 ? "Tout est dans le caddie 🎉" : `${left} article${left > 1 ? "s" : ""} à prendre`}
+          <p className="text-base text-ink-soft">
+            {left === 0 ? "Tout est dans le caddie" : `${left} article${left > 1 ? "s" : ""} à prendre`}
           </p>
-          <h1 className="font-display text-3xl font-bold text-ink sm:text-4xl">
-            🛒 Liste de courses
-          </h1>
+          <h1 className="font-display text-3xl font-medium text-ink sm:text-4xl">Liste de courses</h1>
         </div>
         {hasChecked ? (
           <button
             type="button"
             onClick={clearChecked}
-            className="min-h-11 rounded-pill bg-white px-4 text-sm font-bold text-ink-soft hover:bg-cream-deep"
+            className="min-h-11 px-2 text-sm font-medium text-coral hover:underline"
           >
             Vider les articles cochés
           </button>
         ) : null}
       </header>
 
-      <form onSubmit={handleQuickAdd} className="flex gap-2">
+      <form onSubmit={handleQuickAdd} className="relative flex gap-2">
         <input
           type="text"
           value={quickLabel}
           onChange={(changeEvent) => setQuickLabel(changeEvent.target.value)}
           placeholder="Ajouter un article…"
-          className="min-h-14 w-full flex-1 rounded-pill border border-line bg-white px-5 text-base font-semibold text-ink outline-none placeholder:text-ink-faint focus:border-sage focus:ring-2 focus:ring-sage-soft"
+          className="min-h-14 w-full flex-1 rounded-pill bg-surface px-5 text-base font-medium text-ink outline-none placeholder:text-ink-faint focus:ring-2 focus:ring-coral/30"
         />
         <button
           type="submit"
-          className="min-h-14 shrink-0 btn-pop btn-pop-sage px-5 text-base font-extrabold "
+          aria-label="Ajouter à la liste"
+          className="btn-pop btn-pop-coral h-14 w-14 shrink-0"
         >
-          ＋
+          <Icon name="plus" className="h-6 w-6" strokeWidth={2.2} />
         </button>
         <button
           type="button"
           onClick={() => setCreating(true)}
-          className="hidden min-h-14 shrink-0 rounded-pill bg-white px-4 text-sm font-bold text-ink-soft hover:bg-cream-deep sm:block"
+          className="hidden min-h-14 shrink-0 rounded-pill bg-surface px-4 text-sm font-medium text-ink-soft hover:bg-cream-deep sm:block"
         >
           Détails
         </button>
       </form>
 
       {items.length === 0 ? (
-        <Card>
-          <p className="px-2 py-8 text-center text-base font-semibold text-ink-soft">
-            La liste est vide. 🌿
-          </p>
-        </Card>
+        <p className="rounded-card bg-surface px-5 py-8 text-center text-base text-ink-soft">
+          La liste est vide. Ajoutez un article ci-dessus, ou depuis une recette.
+        </p>
       ) : (
         groups.map((group) => (
           <Card key={group.aisle}>
             <CardTitle title={group.aisle} />
-            <ul className="flex flex-col gap-2">
+            <ul className="flex flex-col divide-y divide-dashed divide-line">
               {group.items.map((item) => (
                 <li key={item.id}>
-                  <div
-                    className={`flex items-center gap-3 rounded-3xl border px-4 py-3 ${
-                      item.checked ? "border-line bg-cream-deep/50" : "border-line bg-white"
-                    }`}
-                  >
+                  <div className="flex items-center gap-3 py-2">
                     <button
                       type="button"
                       onClick={() => toggleItem(item.id)}
                       aria-pressed={item.checked}
                       aria-label={item.checked ? "Décocher cet article" : "Cocher cet article"}
-                      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 text-lg ${
-                        item.checked
-                          ? "border-sage bg-sage text-white"
-                          : "border-line bg-white text-transparent"
+                      className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 transition-colors ${
+                        item.checked ? "border-sage bg-sage text-white" : "border-line text-transparent"
                       }`}
                     >
-                      ✓
+                      <Icon name="check" className="h-5 w-5" strokeWidth={2.4} />
                     </button>
 
                     <button
@@ -110,13 +102,13 @@ export function ShoppingListView() {
                       className="min-w-0 flex-1 text-left"
                     >
                       <span
-                        className={`block truncate text-base font-extrabold ${
+                        className={`block truncate text-base ${
                           item.checked ? "text-ink-faint line-through" : "text-ink"
                         }`}
                       >
                         {item.label}
                         {item.quantity ? (
-                          <span className="ml-2 text-xs font-semibold text-ink-faint">
+                          <span className="ml-2 text-sm text-ink-soft">
                             {item.quantity}
                           </span>
                         ) : null}
@@ -136,10 +128,10 @@ export function ShoppingListView() {
           onSave={(values) => {
             if (editing) {
               updateItem(editing.id, values);
-              confirm({ emoji: "✏️", title: "Article modifié", detail: values.label });
+              confirm({ title: "Article modifié", detail: values.label });
             } else {
               addItem(values);
-              confirm({ emoji: "🛒", title: "Ajouté à la liste", detail: values.label });
+              confirm({ title: "Ajouté à la liste", detail: values.label });
             }
             setEditing(null);
             setCreating(false);
@@ -148,7 +140,7 @@ export function ShoppingListView() {
             editing
               ? () => {
                   deleteItem(editing.id);
-                  confirm({ emoji: "🗑️", title: "Article supprimé", detail: editing.label });
+                  confirm({ kind: "deleted", title: "Article supprimé", detail: editing.label });
                   setEditing(null);
                 }
               : undefined

@@ -46,16 +46,12 @@ export function SettingsView() {
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-5 p-4 pb-28 sm:p-6 md:pb-6 lg:p-8">
       <header>
-        <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-ink-faint">
-          La configuration du foyer
-        </p>
-        <h1 className="font-display text-3xl font-bold text-ink sm:text-4xl">
-          ⚙️ Réglages
-        </h1>
+        <p className="text-base text-ink-soft">La configuration du foyer</p>
+        <h1 className="font-display text-3xl font-medium text-ink sm:text-4xl">Réglages</h1>
       </header>
 
       {done ? (
-        <p role="status" className="rounded-card bg-sage-soft px-5 py-3 text-sm font-bold text-ink">
+        <p role="status" className="rounded-card bg-sage-soft px-5 py-3 text-sm font-medium text-ink">
           {done}
         </p>
       ) : null}
@@ -67,19 +63,19 @@ export function SettingsView() {
         />
         {configured ? (
           <>
-            <p className="text-sm font-semibold text-ink-soft">
+            <p className="text-sm font-medium text-ink-soft">
               Connecté en tant que {member?.first_name ?? session?.user.email}.
             </p>
             <button
               type="button"
               onClick={() => void signOut()}
-              className="mt-3 min-h-11 rounded-pill bg-white px-5 text-sm font-extrabold text-terracotta hover:bg-terracotta-soft"
+              className="mt-3 min-h-11 rounded-pill bg-surface px-5 text-sm font-semibold text-terracotta hover:bg-terracotta-soft"
             >
               Se déconnecter
             </button>
           </>
         ) : (
-          <p className="text-sm font-semibold text-ink-soft">
+          <p className="text-sm font-medium text-ink-soft">
             Les données restent sur cet appareil et ne sont pas encore partagées entre la
             tablette et les téléphones. Voir le fichier README du projet pour connecter la base.
           </p>
@@ -93,8 +89,8 @@ export function SettingsView() {
             <li key={familyMember.id} className="flex items-center gap-3">
               <Avatar member={familyMember} size="sm" />
               <div className="min-w-0">
-                <p className="text-sm font-extrabold text-ink">{familyMember.firstName}</p>
-                <p className="text-xs font-semibold text-ink-faint">
+                <p className="text-sm font-semibold text-ink">{familyMember.firstName}</p>
+                <p className="text-xs font-medium text-ink-faint">
                   {familyMember.role === "parent" ? "Parent" : "Enfant"} ·{" "}
                   {WARMTH_LABEL[familyMember.warmthPreference]}
                 </p>
@@ -102,21 +98,21 @@ export function SettingsView() {
             </li>
           ))}
         </ul>
-        <p className="mt-3 text-xs font-semibold text-ink-faint">
+        <p className="mt-3 text-xs font-medium text-ink-faint">
           Photos et préférences détaillées : bientôt disponible.
         </p>
       </Card>
 
       <Card>
         <CardTitle eyebrow="Données" title="Revenir aux exemples de départ" />
-        <p className="mb-3 text-sm font-semibold text-ink-soft">
+        <p className="mb-3 text-sm font-medium text-ink-soft">
           Remet une rubrique telle qu&apos;elle était à l&apos;installation. Ce qui a été ajouté ou
           modifié sur cet appareil sera perdu.
         </p>
         <ul className="flex flex-col gap-2">
           {resets.map((reset) => (
             <li key={reset.id} className="flex items-center justify-between gap-3">
-              <span className="text-sm font-bold text-ink">{reset.label}</span>
+              <span className="text-sm font-medium text-ink">{reset.label}</span>
               {confirming === reset.id ? (
                 <span className="flex items-center gap-2">
                   <button
@@ -126,14 +122,14 @@ export function SettingsView() {
                       setConfirming(null);
                       announce(`« ${reset.label} » a été remis à zéro.`);
                     }}
-                    className="min-h-9 btn-pop btn-pop-terracotta px-4 text-xs font-extrabold "
+                    className="min-h-9 btn-pop btn-pop-coral px-4 text-xs font-semibold "
                   >
                     Confirmer
                   </button>
                   <button
                     type="button"
                     onClick={() => setConfirming(null)}
-                    className="min-h-9 rounded-pill bg-cream-deep px-4 text-xs font-extrabold text-ink-soft"
+                    className="min-h-9 rounded-pill bg-cream-deep px-4 text-xs font-semibold text-ink-soft"
                   >
                     Annuler
                   </button>
@@ -142,7 +138,7 @@ export function SettingsView() {
                 <button
                   type="button"
                   onClick={() => setConfirming(reset.id)}
-                  className="min-h-9 rounded-pill px-4 text-xs font-extrabold text-ink-soft hover:bg-cream-deep"
+                  className="min-h-9 rounded-pill px-4 text-xs font-semibold text-ink-soft hover:bg-cream-deep"
                 >
                   Réinitialiser
                 </button>

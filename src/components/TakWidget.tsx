@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { RecipeCard, type Recipe } from "./RecipeCard";
+import { Icon, TakFace } from "./Icon";
 import { useEvents } from "@/lib/useEvents";
 import { useShoppingList } from "@/lib/useShoppingList";
 import { useRituals } from "@/lib/useRituals";
@@ -251,6 +252,7 @@ export function TakWidget() {
           memberIds: action.personnes,
           repeatsWeekly: action.repeteChaqueSemaine,
           skipSchoolHolidays: action.horsVacancesScolaires,
+          repeatDays: action.joursSemaine,
           notes: action.note,
         });
         return true;
@@ -306,26 +308,30 @@ export function TakWidget() {
         onClick={() => setOpen((current) => !current)}
         aria-expanded={open}
         aria-label={open ? "Fermer Tak" : "Ouvrir Tak, l'assistant de la famille"}
-        className={`fixed bottom-20 right-4 z-40 flex h-16 w-16 items-center justify-center rounded-full text-3xl shadow-lg transition-transform hover:scale-105 md:bottom-6 md:right-6 ${
-          open ? "bg-ink text-white" : "bg-sun text-ink"
+        className={`fixed bottom-24 right-4 z-40 flex h-16 w-16 items-center justify-center rounded-full transition-transform active:scale-95 md:bottom-6 md:right-6 ${
+          open ? "bg-ink text-white" : "bg-surface"
         }`}
       >
-        {open ? "✕" : <span className={listening ? "animate-bounce" : ""}>🦊</span>}
+        {open ? (
+          <Icon name="close" className="h-6 w-6" />
+        ) : (
+          <TakFace className={`h-11 w-11 ${listening ? "animate-bounce" : ""}`} />
+        )}
       </button>
 
       {open ? (
         <div
           role="dialog"
           aria-label="Tak, l'assistant de la famille"
-          className="fixed inset-x-0 bottom-0 z-40 flex h-[85vh] flex-col overflow-hidden rounded-t-card bg-cream shadow-2xl sm:inset-x-auto sm:bottom-24 sm:right-6 sm:h-[70vh] sm:w-[26rem] sm:rounded-card"
+          className="fixed inset-x-0 bottom-0 z-40 flex h-[85vh] flex-col overflow-hidden rounded-t-card bg-cream sm:inset-x-auto sm:bottom-24 sm:right-6 sm:h-[70vh] sm:w-[26rem] sm:rounded-card"
         >
-          <header className="flex items-center gap-3 border-b border-line bg-sun-soft px-5 py-4">
-            <span className="text-3xl" aria-hidden>
-              🦊
+          <header className="flex items-center gap-3 bg-forest px-5 py-4 text-white">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-surface">
+              <TakFace className="h-9 w-9" />
             </span>
             <div className="min-w-0 flex-1">
-              <h2 className="text-lg font-extrabold tracking-tight text-ink">Salut, c&apos;est Tak !</h2>
-              <p className="truncate text-xs font-semibold text-ink-soft">
+              <h2 className="text-lg font-medium tracking-tight">Salut, c&apos;est Tak !</h2>
+              <p className="truncate text-xs text-white/80">
                 Pose-moi une question ou demande-moi un coup de main.
               </p>
             </div>
@@ -333,7 +339,7 @@ export function TakWidget() {
               <button
                 type="button"
                 onClick={() => setMessages([])}
-                className="min-h-10 shrink-0 rounded-pill bg-white/80 px-3 text-xs font-bold text-ink-soft hover:bg-white"
+                className="min-h-10 shrink-0 rounded-pill bg-white/15 px-3 text-xs font-medium text-white hover:bg-white/25"
               >
                 Nouvelle discussion
               </button>
@@ -342,22 +348,22 @@ export function TakWidget() {
               type="button"
               onClick={() => setOpen(false)}
               aria-label="Fermer Tak"
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/80 text-lg font-bold text-ink-soft hover:bg-white"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/15 text-white hover:bg-white/25"
             >
-              ✕
+              <Icon name="close" className="h-5 w-5" />
             </button>
           </header>
 
           <div ref={scrollRef} className="flex flex-1 flex-col gap-3 overflow-y-auto p-4" aria-live="polite">
             {messages.length === 0 ? (
               <div className="flex flex-col gap-2">
-                <p className="text-xs font-bold uppercase tracking-[0.1em] text-ink-faint">Par exemple</p>
+                <p className="text-xs font-medium text-ink-faint">Par exemple</p>
                 {SUGGESTIONS.map((suggestion) => (
                   <button
                     key={suggestion}
                     type="button"
                     onClick={() => void ask(suggestion)}
-                    className="min-h-11 rounded-3xl bg-white px-4 py-2 text-left text-sm font-semibold text-ink hover:bg-cream-deep"
+                    className="min-h-11 rounded-3xl bg-surface px-4 py-2 text-left text-sm font-medium text-ink hover:bg-cream-deep"
                   >
                     « {suggestion} »
                   </button>
@@ -369,15 +375,15 @@ export function TakWidget() {
               message.role === "user" ? (
                 <p
                   key={message.id}
-                  className="ml-8 self-end whitespace-pre-line rounded-3xl rounded-br-md bg-sage px-4 py-2 text-sm font-semibold text-white"
+                  className="ml-8 self-end whitespace-pre-line rounded-3xl rounded-br-md bg-coral px-4 py-2 text-sm text-white"
                 >
                   {message.text}
                 </p>
               ) : (
                 <div key={message.id} className="mr-6 flex flex-col gap-2 self-start">
                   <p
-                    className={`whitespace-pre-line rounded-3xl rounded-bl-md px-4 py-2 text-sm font-semibold text-ink ${
-                      message.kind === "error" ? "bg-rose-soft" : "bg-white"
+                    className={`whitespace-pre-line rounded-3xl rounded-bl-md px-4 py-2 text-sm font-medium text-ink ${
+                      message.kind === "error" ? "bg-coral-soft" : "bg-surface"
                     }`}
                   >
                     {message.text}
@@ -387,38 +393,38 @@ export function TakWidget() {
                     <div className="rounded-card border-2 border-sage bg-sage-soft/40 p-3">
                       <ul className="mb-3 flex flex-col gap-1.5">
                         {message.proposed.map((item, index) => (
-                          <li key={index} className="flex items-start gap-2 text-sm font-bold text-ink">
+                          <li key={index} className="flex items-start gap-2 text-sm font-medium text-ink">
                             <span className="flex-1">{item.summary}</span>
                             {!message.outcome && message.proposed!.length > 1 ? (
                               <button
                                 type="button"
                                 onClick={() => removeProposed(message.id, index)}
                                 aria-label={`Retirer : ${item.summary}`}
-                                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/80 text-xs text-ink-soft hover:bg-white"
+                                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-surface text-ink-soft hover:bg-cream-deep"
                               >
-                                ✕
+                                <Icon name="close" className="h-4 w-4" />
                               </button>
                             ) : null}
                           </li>
                         ))}
                       </ul>
                       {message.outcome === "confirmed" ? (
-                        <p className="text-xs font-extrabold text-sage">✓ C&apos;est fait.</p>
+                        <p className="text-xs font-semibold text-sage">C&apos;est fait.</p>
                       ) : message.outcome === "cancelled" ? (
-                        <p className="text-xs font-bold text-ink-faint">Annulé.</p>
+                        <p className="text-xs font-medium text-ink-faint">Annulé.</p>
                       ) : (
                         <div className="flex gap-2">
                           <button
                             type="button"
                             onClick={() => decide(message.id, true)}
-                            className="min-h-11 flex-1 btn-pop btn-pop-sage px-4 text-sm font-extrabold"
+                            className="min-h-11 flex-1 btn-pop btn-pop-coral px-4 text-sm font-semibold"
                           >
                             {message.proposed.length > 1 ? "Tout confirmer" : "Confirmer"}
                           </button>
                           <button
                             type="button"
                             onClick={() => decide(message.id, false)}
-                            className="min-h-11 rounded-pill bg-white px-4 text-sm font-extrabold text-ink-soft hover:bg-cream-deep"
+                            className="min-h-11 rounded-pill bg-surface px-4 text-sm font-semibold text-ink-soft hover:bg-cream-deep"
                           >
                             Annuler
                           </button>
@@ -433,7 +439,7 @@ export function TakWidget() {
             )}
 
             {loading ? (
-              <p className="self-start rounded-3xl rounded-bl-md bg-white px-4 py-2 text-sm font-semibold text-ink-faint">
+              <p className="self-start rounded-3xl rounded-bl-md bg-surface px-4 py-2 text-sm font-medium text-ink-faint">
                 Tak réfléchit…
               </p>
             ) : null}
@@ -444,7 +450,7 @@ export function TakWidget() {
               formEvent.preventDefault();
               void ask(draft);
             }}
-            className="flex items-center gap-2 border-t border-line bg-white/70 p-3"
+            className="flex items-center gap-2 border-t border-line bg-surface p-3"
           >
             <button
               type="button"
@@ -453,11 +459,11 @@ export function TakWidget() {
               aria-pressed={listening}
               aria-label={listening ? "Arrêter l'écoute" : "Parler à Tak"}
               title={supported ? undefined : "Micro non disponible sur ce navigateur"}
-              className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-xl transition-colors disabled:opacity-40 ${
-                listening ? "animate-pulse bg-terracotta text-white" : "bg-sage-soft"
+              className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-colors disabled:opacity-40 ${
+                listening ? "animate-pulse bg-coral text-white" : "bg-coral-soft text-coral"
               }`}
             >
-              🎙️
+              <Icon name="mic" className="h-5 w-5" />
             </button>
             <input
               type="text"
@@ -465,12 +471,12 @@ export function TakWidget() {
               onChange={(changeEvent) => setDraft(changeEvent.target.value)}
               placeholder={listening ? "Je t'écoute…" : "Écris à Tak…"}
               aria-label="Message pour Tak"
-              className="min-h-11 w-full flex-1 rounded-pill border border-line bg-white px-4 text-sm font-semibold text-ink outline-none placeholder:text-ink-faint focus:border-sage focus:ring-2 focus:ring-sage-soft"
+              className="min-h-11 w-full flex-1 rounded-pill bg-cream px-4 text-sm text-ink outline-none placeholder:text-ink-faint focus:ring-2 focus:ring-coral/30"
             />
             <button
               type="submit"
               disabled={loading || !draft.trim()}
-              className="min-h-11 shrink-0 btn-pop btn-pop-sage px-4 text-sm font-extrabold text-white disabled:opacity-40"
+              className="min-h-11 shrink-0 btn-pop btn-pop-coral px-4 text-sm font-semibold text-white disabled:opacity-40"
             >
               Envoyer
             </button>

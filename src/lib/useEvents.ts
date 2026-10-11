@@ -18,6 +18,22 @@ function newId(): string {
 
 export type NewEvent = Omit<CalendarEvent, "id">;
 
+/** École de Khloé : du lundi au vendredi, hors vacances scolaires (octobre 2026). */
+const SCHOOL_DAYS = [1, 2, 3, 4, 5];
+
+/**
+ * L'événement « École » d'exemple ne revenait que le jour de sa création
+ * (un vendredi) : il passe du lundi au vendredi, hors vacances, tant
+ * qu'aucun jour n'a été choisi à la main.
+ */
+function migrate(events: CalendarEvent[]): CalendarEvent[] {
+  return events.map((event) =>
+    event.id === "demo-ecole" && event.repeatsWeekly && !event.repeatDays
+      ? { ...event, repeatDays: SCHOOL_DAYS, skipSchoolHolidays: true }
+      : event,
+  );
+}
+
 /**
  * Les événements du calendrier familial.
  *
@@ -29,10 +45,10 @@ export type NewEvent = Omit<CalendarEvent, "id">;
 export function useEvents() {
   const [stored, setStored] = useStoredState<CalendarEvent[] | null>(STORAGE_KEY, null);
 
-  const events = useMemo(() => stored ?? demoEvents(todayKey()), [stored]);
+  const events = useMemo(() => migrate(stored ?? demoEvents(todayKey())), [stored]);
 
   /** Les exemples deviennent de vrais événements dès la première modification. */
-  const currentList = useCallback(() => stored ?? demoEvents(todayKey()), [stored]);
+  const currentList = useCallback(() => migrate(stored ?? demoEvents(todayKey())), [stored]);
 
   const addEvent = useCallback(
     (event: NewEvent): CalendarEvent => {

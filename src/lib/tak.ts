@@ -21,6 +21,7 @@ export const addEventSchema = z.object({
   personnes: z.array(z.enum(memberIds)).min(1),
   repeteChaqueSemaine: z.boolean().optional(),
   horsVacancesScolaires: z.boolean().optional(),
+  joursSemaine: z.array(z.number()).optional(),
   note: z.string().optional(),
 });
 
@@ -89,6 +90,10 @@ export const takModelActionSchema = z.object({
     .boolean()
     .nullable()
     .describe("Avec repeteChaqueSemaine : sauter les vacances scolaires et jours fériés"),
+  joursSemaine: z
+    .array(z.number())
+    .nullable()
+    .describe("Avec repeteChaqueSemaine : jours concernés, 0 = dimanche … 6 = samedi (ex. [1,2,3,4,5])"),
   note: z.string().nullable(),
   label: z.string().nullable().describe("Nom d'UN article, pour la liste de courses"),
   quantite: z.string().nullable(),
@@ -137,6 +142,10 @@ export function toTakAction(raw: TakModelAction): TakAction {
         repeteChaqueSemaine: raw.repeteChaqueSemaine || undefined,
         horsVacancesScolaires:
           (raw.repeteChaqueSemaine && raw.horsVacancesScolaires) || undefined,
+        joursSemaine:
+          raw.repeteChaqueSemaine && raw.joursSemaine?.length
+            ? raw.joursSemaine.filter((day) => Number.isInteger(day) && day >= 0 && day <= 6)
+            : undefined,
         note: raw.note || undefined,
       };
     }
@@ -227,8 +236,18 @@ export function youtubeSearchUrl(plat: string): string {
 
 /** Recette structurée, pour l'afficher avec des ingrédients et des étapes séparés. */
 export const recipeSchema = z.object({
+  portions: z.number().describe("Nombre de portions de la recette, ex. 3 pour la famille"),
   ingredients: z.array(z.string().min(1)).min(1),
   etapes: z.array(z.string().min(1)).min(1),
+  nutrition: z
+    .object({
+      calories: z.number().describe("kcal par portion adulte"),
+      proteines: z.number().describe("grammes de protéines par portion"),
+      glucides: z.number().describe("grammes de glucides par portion"),
+      lipides: z.number().describe("grammes de lipides par portion"),
+      fibres: z.number().describe("grammes de fibres par portion"),
+    })
+    .describe("Valeurs nutritionnelles estimées par portion, cohérentes avec les quantités"),
 });
 
 export type Recipe = z.infer<typeof recipeSchema>;
@@ -368,7 +387,8 @@ Ce que tu sais faire :
 
 Pour une activité régulière « hors vacances scolaires » (natation, danse…), mets
 repeteChaqueSemaine et horsVacancesScolaires à true : l'application connaît les vacances de la
-zone C et les jours fériés. "date" est alors la première séance à venir.
+zone C et les jours fériés. "date" est alors la première séance à venir. Pour plusieurs jours
+par semaine (« l'école du lundi au vendredi »), remplis joursSemaine (0 = dimanche … 6 = samedi).
 
 Ne propose une action que si la phrase la demande ou l'implique clairement : pour une simple
 question ou une demande d'idée, réponds sans action, et propose d'ajouter si c'est utile.

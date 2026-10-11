@@ -5,7 +5,8 @@
 
 import { generateObject } from "ai";
 import { z } from "zod";
-import { findDishImage, recipeSchema, youtubeSearchUrl } from "./tak";
+import { recipeSchema, youtubeSearchUrl } from "./tak";
+import { findDishPhoto } from "./dishPhotos";
 import { CRAVINGS, dishIdeaSchema, type Craving, type DishIdea } from "./recipeIdeas";
 
 export { CRAVINGS, type Craving, type DishIdea };
@@ -13,8 +14,19 @@ export { CRAVINGS, type Craving, type DishIdea };
 /** Seul modèle autorisé au palier gratuit d'AI Gateway (voir api/tak). */
 export const RECIPE_MODEL = "openai/gpt-5.4-nano";
 
+export interface Nutrition {
+  calories: number;
+  proteines: number;
+  glucides: number;
+  lipides: number;
+  fibres: number;
+}
+
 export interface FullRecipe {
   plat: string;
+  portions?: number;
+  /** Estimation par portion, calculée par l'IA à partir des quantités. */
+  nutrition?: Nutrition;
   ingredients: string[];
   etapes: string[];
   imageUrl: string | null;
@@ -23,19 +35,29 @@ export interface FullRecipe {
 
 /** Recette complète d'un plat : ingrédients, étapes, photo et lien vidéo. */
 export async function buildRecipe(plat: string): Promise<FullRecipe> {
-  const [{ object: recipe }, imageUrl] = await Promise.all([
-    generateObject({
-      model: RECIPE_MODEL,
-      schema: recipeSchema,
-      system:
-        "Tu donnes une recette simple et familiale, en français, pour une famille avec un " +
-        "jeune enfant. Des ingrédients courants, une préparation qui reste accessible.",
-      prompt: `Recette : ${plat}`,
+  const { object: recipe } = await generateObject({
+    model: RECIPE_MODEL,
+    schema: recipeSchema.extend({
+      nomAnglais: z.string().describe("Nom du plat en anglais, court, pour trouver une photo"),
+      ingredientAnglais: z.string().describe("Ingrédient principal en anglais, un mot"),
     }),
-    findDishImage(plat),
-  ]);
+    system:
+      "Tu donnes une recette simple et familiale, en français, pour une famille avec un " +
+      "jeune enfant, pour 3 portions (2 adultes et une enfant de 5 ans). Des ingrédients " +
+      "courants avec leurs quantités, une préparation qui reste accessible. " +
+      "Respecte la recette traditionnelle du plat demandé (ex. le poulet DG se fait avec " +
+      "des plantains mûrs).",
+    prompt: `Recette : ${plat}`,
+  });
+  const imageUrl = await findDishPhoto({
+    plat,
+    englishName: recipe.nomAnglais,
+    mainIngredient: recipe.ingredientAnglais,
+  });
   return {
     plat,
+    portions: recipe.portions,
+    nutrition: recipe.nutrition,
     ingredients: recipe.ingredients,
     etapes: recipe.etapes,
     imageUrl,
@@ -79,5 +101,11 @@ export async function suggestDishes(input: {
       .filter(Boolean)
       .join("\n"),
   });
-  return object.idees.slice(0, 6);
+  const ideas = object.idees.slice(0, 6);
+  const photos = await Promise.all(
+    ideas.map((idea) =>
+      findDishPhoto({ plat: idea.plat, englishName: idea.nomAnglais, mainIngredient: idea.ingredientAnglais }),
+    ),
+  );
+  return ideas.map((idea, index) => ({ ...idea, imageUrl: photos[index] }));
 }
