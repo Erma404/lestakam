@@ -21,7 +21,6 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/calendrier", label: "Calendrier", emoji: "🗓️" },
   { href: "/rituels", label: "Rituels", emoji: "✅" },
   { href: "/recompenses", label: "Récompenses", emoji: "⭐" },
-  { href: "/repas", label: "Repas", emoji: "🍽️", secondary: true },
   { href: "/recettes", label: "Recettes", emoji: "📖", secondary: true },
   { href: "/listes", label: "Listes", emoji: "🛒", secondary: true },
   { href: "/reglages", label: "Réglages", emoji: "⚙️", secondary: true },
@@ -129,7 +128,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           type="button"
           onClick={() => setMoreOpen(true)}
           aria-expanded={moreOpen}
-          aria-label="Plus de pages : Repas, Recettes, Listes, Réglages"
+          aria-label="Plus de pages : Recettes, Listes, Réglages"
           className={`flex min-w-16 flex-col items-center gap-0.5 rounded-2xl px-3 py-2 text-[11px] font-bold ${
             SECONDARY_ITEMS.some((item) => isActive(pathname, item.href))
               ? "bg-sage-soft text-ink"
@@ -155,7 +154,7 @@ const SECONDARY_ITEMS = NAV_ITEMS.filter((item) => item.secondary);
 
 /**
  * Tiroir mobile pour les pages qui n'ont pas leur place dans la barre du
- * bas (5 entrées maximum) : Repas, Recettes, Listes, Réglages restent
+ * bas (5 entrées maximum) : Recettes, Listes, Réglages restent
  * sinon injoignables sur téléphone, la barre latérale qui les liste étant
  * réservée à la tablette et à l'ordinateur.
  */

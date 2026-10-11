@@ -24,14 +24,6 @@ export const addEventSchema = z.object({
   note: z.string().optional(),
 });
 
-/** Un repas à planifier. */
-export const addMealSchema = z.object({
-  action: z.literal("planifier_repas"),
-  titre: z.string().min(1),
-  date: z.string().describe("Date au format AAAA-MM-JJ"),
-  moment: z.enum(["midi", "soir"]),
-});
-
 /** Un article à ajouter à la liste de courses. */
 export const addShoppingItemSchema = z.object({
   action: z.literal("ajouter_article"),
@@ -60,7 +52,6 @@ export const unknownSchema = z.object({
 
 export const takActionSchema = z.discriminatedUnion("action", [
   addEventSchema,
-  addMealSchema,
   addShoppingItemSchema,
   completeRitualSchema,
   findRecipeSchema,
@@ -79,7 +70,6 @@ export type TakAction = z.infer<typeof takActionSchema>;
 export const takModelActionSchema = z.object({
   action: z.enum([
     "ajouter_evenement",
-    "planifier_repas",
     "ajouter_article",
     "valider_rituel",
     "chercher_recette",
@@ -87,8 +77,8 @@ export const takModelActionSchema = z.object({
   // OpenAI en sortie structurée stricte exige que chaque propriété figure dans
   // "required" : un champ non pertinent pour l'action choisie doit être rendu
   // nullable (et donc valoir explicitement `null`), jamais simplement omis.
-  titre: z.string().nullable().describe("Titre, pour un événement ou un repas"),
-  date: z.string().nullable().describe("Date au format AAAA-MM-JJ, pour un événement ou un repas"),
+  titre: z.string().nullable().describe("Titre, pour un événement"),
+  date: z.string().nullable().describe("Date au format AAAA-MM-JJ, pour un événement"),
   heureDebut: z.string().nullable().describe("Heure de début HH:MM, pour un événement"),
   heureFin: z.string().nullable().describe("Heure de fin HH:MM, pour un événement"),
   lieu: z.string().nullable().describe("Lieu, pour un événement"),
@@ -100,7 +90,6 @@ export const takModelActionSchema = z.object({
     .nullable()
     .describe("Avec repeteChaqueSemaine : sauter les vacances scolaires et jours fériés"),
   note: z.string().nullable(),
-  moment: z.enum(["midi", "soir"]).nullable().describe("Moment du repas"),
   label: z.string().nullable().describe("Nom d'UN article, pour la liste de courses"),
   quantite: z.string().nullable(),
   rayon: z.string().nullable(),
@@ -150,12 +139,6 @@ export function toTakAction(raw: TakModelAction): TakAction {
           (raw.repeteChaqueSemaine && raw.horsVacancesScolaires) || undefined,
         note: raw.note || undefined,
       };
-    }
-    case "planifier_repas": {
-      if (!raw.titre || !raw.date || !raw.moment) {
-        return { action: "incompris", raison: "Il manque le nom du plat, le jour ou le moment du repas." };
-      }
-      return { action: "planifier_repas", titre: raw.titre, date: raw.date, moment: raw.moment };
     }
     case "ajouter_article": {
       if (!raw.label) {
@@ -221,8 +204,6 @@ export function describeTakAction(action: TakAction, rituals: TakRitual[] = []):
         : "";
       return `Ajouter « ${action.titre} » le ${action.date}${heure}${repetition}, pour ${joinNames(action.personnes)}.`;
     }
-    case "planifier_repas":
-      return `Planifier « ${action.titre} » le ${action.date} (${action.moment}).`;
     case "ajouter_article":
       return `Ajouter « ${action.label} »${action.quantite ? ` (${action.quantite})` : ""} à la liste de courses.`;
     case "valider_rituel": {
@@ -343,7 +324,7 @@ export async function findDishImage(plat: string): Promise<string | null> {
 
 /**
  * Consignes de Tak. `context` est l'état réel de l'application au moment de
- * la question (calendrier, repas, courses, rituels, étoiles, météo), construit
+ * la question (calendrier, courses, rituels, étoiles, météo), construit
  * par l'appareil : Tak répond à partir de ce que la famille voit à l'écran.
  */
 export function buildTakSystemPrompt(input: {
@@ -370,7 +351,7 @@ export function buildTakSystemPrompt(input: {
 leur fille Khloé (5 ans). Ils habitent au Blanc-Mesnil. Tu es leur assistant IA du quotidien.
 
 Ce que tu sais faire :
-1. Répondre à TOUTE question, dans "reponse" : sur leur planning, leurs repas, leurs courses, les
+1. Répondre à TOUTE question, dans "reponse" : sur leur planning, leurs courses, les
    rituels et étoiles de Khloé, la météo — en t'appuyant sur l'état de l'application ci-dessous —
    mais aussi les questions générales : idées de sorties ou d'activités avec une enfant de 5 ans,
    idées de menus, conseils d'éducation, organisation, culture générale, devoirs, histoires à
@@ -378,13 +359,12 @@ Ce que tu sais faire :
 2. Proposer des actions dans l'application, dans "actions" (la famille confirme avant qu'elles
    s'exécutent) :
    - "ajouter_evenement" : rendez-vous, activité, tout ce qui va au calendrier ;
-   - "planifier_repas" : un plat prévu pour un midi ou un soir ;
    - "ajouter_article" : UN article à acheter (une action par article : « lait, œufs et pain » =
      trois actions) ;
    - "valider_rituel" : un rituel de Khloé vient d'être fait (reprends exactement l'identifiant) ;
    - "chercher_recette" : on demande une recette ou comment préparer un plat.
-   Tu peux combiner : ex. « planifie des lasagnes demain soir et ajoute ce qu'il faut » = un repas
-   + un article par ingrédient manquant.
+   Tu peux combiner : ex. « on fait des lasagnes demain, ajoute ce qu'il faut » = un article par
+   ingrédient manquant.
 
 Pour une activité régulière « hors vacances scolaires » (natation, danse…), mets
 repeteChaqueSemaine et horsVacancesScolaires à true : l'application connaît les vacances de la
@@ -394,12 +374,12 @@ Ne propose une action que si la phrase la demande ou l'implique clairement : pou
 question ou une demande d'idée, réponds sans action, et propose d'ajouter si c'est utile.
 
 Tu ne peux pas supprimer ni modifier ce qui existe : dis-le gentiment et indique où le faire dans
-l'application (Calendrier, Repas, Listes, Rituels, Récompenses).
+l'application (Calendrier, Listes, Rituels, Récompenses).
 
 Règles de "reponse" :
 - Français, tutoiement, ton chaleureux et simple ; 1 à 4 phrases, ou une courte liste si utile.
 - Si tu proposes des actions, résume-les en une phrase (« Je te propose d'ajouter… »).
-- N'invente jamais un événement, un repas ou un chiffre absent du contexte : si l'info n'y est
+- N'invente jamais un événement ou un chiffre absent du contexte : si l'info n'y est
   pas, dis-le.
 - Pas de markdown lourd (pas de titres, pas de gras) : le texte s'affiche tel quel.
 

@@ -9,7 +9,7 @@ import { addDays, formatLongDate } from "./dates";
 import { expandEvents } from "./events";
 import { describeWeather } from "./weather";
 import { nextGoal, starsThisWeek, type StarEntry } from "./rewards";
-import type { CalendarEvent, Meal, RewardGoal, ShoppingItem, WeatherForecast } from "./types";
+import type { CalendarEvent, RewardGoal, ShoppingItem, WeatherForecast } from "./types";
 
 /** Fenêtre du calendrier transmise à Tak : assez pour « ce week-end » ou « la semaine prochaine ». */
 const EVENT_WINDOW_DAYS = 14;
@@ -17,7 +17,6 @@ const EVENT_WINDOW_DAYS = 14;
 export interface TakContextInput {
   today: string;
   events: CalendarEvent[];
-  meals: Meal[];
   shoppingItems: ShoppingItem[];
   starEntries: StarEntry[];
   goals: RewardGoal[];
@@ -67,17 +66,6 @@ export function buildTakContext(input: TakContextInput): string {
             })
             .join("\n")
         : "Rien de prévu."),
-  );
-
-  const mealWindow = windowFrom(input.today, 7);
-  const meals = input.meals
-    .filter((meal) => mealWindow.includes(meal.date))
-    .sort((a, b) => a.date.localeCompare(b.date) || a.moment.localeCompare(b.moment));
-  sections.push(
-    "REPAS PRÉVUS (7 jours)\n" +
-      (meals.length > 0
-        ? meals.map((meal) => `- ${formatLongDate(meal.date)}, ${meal.moment} : ${meal.title}`).join("\n")
-        : "Aucun repas planifié."),
   );
 
   const toBuy = input.shoppingItems.filter((item) => !item.checked);

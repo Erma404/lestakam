@@ -87,16 +87,6 @@ export interface Reminder {
   done: boolean;
 }
 
-export interface Meal {
-  id: string;
-  /** Date au format AAAA-MM-JJ. */
-  date: string;
-  moment: "midi" | "soir";
-  title: string;
-  emoji: string;
-  notes?: string;
-}
-
 export interface ShoppingItem {
   id: string;
   label: string;
@@ -104,8 +94,6 @@ export interface ShoppingItem {
   /** Rayon du magasin, pour regrouper la liste. */
   aisle?: string;
   checked: boolean;
-  /** Ajouté automatiquement depuis un repas planifié. */
-  fromMealId?: string;
 }
 
 export interface RewardGoal {

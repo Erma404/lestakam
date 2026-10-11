@@ -1,5 +1,6 @@
 "use client";
 
+import { useSaveConfirmation } from "./SaveConfirmation";
 import { useMemo, useState } from "react";
 import { Avatar } from "./Avatar";
 import { EventForm } from "./EventForm";
@@ -71,7 +72,7 @@ export function CalendarView({ initialIso }: CalendarViewProps) {
   const [filterMember, setFilterMember] = useState<MemberId | null>(null);
   const [editing, setEditing] = useState<CalendarEvent | null>(null);
   const [creating, setCreating] = useState<{ date: string; startTime?: string } | null>(null);
-  const [confirmation, setConfirmation] = useState<string | null>(null);
+  const { confirm, dialog: confirmationDialog } = useSaveConfirmation();
 
   const visibleDays = useMemo(() => {
     if (view === "jour") return [anchor];
@@ -81,18 +82,13 @@ export function CalendarView({ initialIso }: CalendarViewProps) {
 
   const expanded = useMemo(() => expandEvents(events, visibleDays), [events, visibleDays]);
 
-  function announce(message: string) {
-    setConfirmation(message);
-    window.setTimeout(() => setConfirmation(null), 4000);
-  }
-
   function handleSave(values: NewEvent) {
     if (editing) {
       updateEvent(baseEventId(editing.id), values);
-      announce(`« ${values.title} » a été modifié.`);
+      confirm({ emoji: "✏️", title: "Événement modifié", detail: values.title });
     } else {
       addEvent(values);
-      announce(`« ${values.title} » a été ajouté au calendrier.`);
+      confirm({ emoji: "📅", title: "Ajouté au calendrier", detail: values.title });
     }
     setEditing(null);
     setCreating(null);
@@ -101,7 +97,7 @@ export function CalendarView({ initialIso }: CalendarViewProps) {
   function handleDelete() {
     if (!editing) return;
     deleteEvent(baseEventId(editing.id));
-    announce(`« ${editing.title} » a été supprimé.`);
+    confirm({ emoji: "🗑️", title: "Événement supprimé", detail: editing.title });
     setEditing(null);
   }
 
@@ -168,12 +164,6 @@ export function CalendarView({ initialIso }: CalendarViewProps) {
           </button>
         </div>
       </header>
-
-      {confirmation ? (
-        <p role="status" className="rounded-card bg-sage-soft px-5 py-3 text-sm font-bold text-ink">
-          {confirmation}
-        </p>
-      ) : null}
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap gap-2">
@@ -266,6 +256,8 @@ export function CalendarView({ initialIso }: CalendarViewProps) {
           }}
         />
       ) : null}
+
+      {confirmationDialog}
     </div>
   );
 }

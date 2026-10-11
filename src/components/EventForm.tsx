@@ -6,6 +6,8 @@ import { MEMBERS } from "@/lib/family";
 import { CATEGORY_LABEL, accentClasses } from "@/lib/accents";
 import type { CalendarEvent, EventCategory, MemberId } from "@/lib/types";
 import type { NewEvent } from "@/lib/useEvents";
+import { mapsUrl } from "@/lib/events";
+import { TimePicker } from "./TimePicker";
 
 const CATEGORIES = Object.keys(CATEGORY_LABEL) as EventCategory[];
 
@@ -150,22 +152,23 @@ export function EventForm({
           </Field>
 
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="De (optionnel)">
-              <input
-                type="time"
-                value={startTime}
-                onChange={(changeEvent) => setStartTime(changeEvent.target.value)}
-                className={inputClass}
-              />
-            </Field>
-            <Field label="À (optionnel)">
-              <input
-                type="time"
-                value={endTime}
-                onChange={(changeEvent) => setEndTime(changeEvent.target.value)}
-                className={inputClass}
-              />
-            </Field>
+            <TimeField label="De (optionnel)">
+              {(labelId) => <TimePicker value={startTime} onChange={setStartTime} labelId={labelId} />}
+            </TimeField>
+            <TimeField label="À (optionnel)">
+              {(labelId) => (
+                <TimePicker
+                  value={endTime}
+                  onChange={setEndTime}
+                  labelId={labelId}
+                  suggestedHour={
+                    startTime
+                      ? String((Number(startTime.slice(0, 2)) + 1) % 24).padStart(2, "0")
+                      : undefined
+                  }
+                />
+              )}
+            </TimeField>
           </div>
 
           <Group label="Qui est concerné ?">
@@ -218,10 +221,20 @@ export function EventForm({
               type="text"
               value={location}
               onChange={(changeEvent) => setLocation(changeEvent.target.value)}
-              placeholder="Piscine municipale"
+              placeholder="Centre aquatique olympique, Saint-Denis"
               className={inputClass}
             />
           </Field>
+          {location.trim() ? (
+            <a
+              href={mapsUrl(location)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="-mt-2 inline-flex min-h-11 items-center gap-2 self-start rounded-pill bg-sky-soft px-4 text-sm font-bold text-ink hover:brightness-97"
+            >
+              <span aria-hidden>📍</span> Voir sur Google Maps
+            </a>
+          ) : null}
 
           <label className="flex min-h-14 items-center gap-3 rounded-card border border-line bg-white px-4 py-3">
             <input
@@ -337,6 +350,28 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
       </span>
       {children}
     </label>
+  );
+}
+
+/**
+ * Même présentation qu'un champ, sans balise <label> : le sélecteur d'heure
+ * contient plusieurs boutons, qu'un <label> détournerait vers le premier.
+ */
+function TimeField({
+  label,
+  children,
+}: {
+  label: string;
+  children: (labelId: string) => React.ReactNode;
+}) {
+  const labelId = useId();
+  return (
+    <div className="flex flex-col gap-1.5">
+      <span id={labelId} className="text-[11px] font-bold uppercase tracking-[0.12em] text-ink-faint">
+        {label}
+      </span>
+      {children(labelId)}
+    </div>
   );
 }
 

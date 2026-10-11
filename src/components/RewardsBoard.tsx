@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Card, CardTitle } from "./Card";
+import { useSaveConfirmation } from "./SaveConfirmation";
 import { ProgressBar } from "./RitualsBoard";
 import { RewardGoalForm } from "./RewardGoalForm";
 import { memberById } from "@/lib/family";
@@ -22,6 +23,7 @@ export function RewardsBoard({ initialIso }: RewardsBoardProps) {
 
   const { entries, total, resetToDemo: resetStars, shared: starsShared } = useStars();
   const { goals, addGoal, updateGoal, deleteGoal } = useRewardGoals();
+  const { confirm, dialog: confirmationDialog } = useSaveConfirmation();
 
   const [editing, setEditing] = useState<RewardGoal | null>(null);
   const [creating, setCreating] = useState(false);
@@ -167,8 +169,10 @@ export function RewardsBoard({ initialIso }: RewardsBoardProps) {
           onSave={(values) => {
             if (editing) {
               updateGoal(editing.id, values);
+              confirm({ emoji: "✏️", title: "Objectif modifié", detail: values.label });
             } else {
               addGoal(values);
+              confirm({ emoji: values.emoji || "⭐", title: "Objectif ajouté", detail: values.label });
             }
             setEditing(null);
             setCreating(false);
@@ -177,6 +181,7 @@ export function RewardsBoard({ initialIso }: RewardsBoardProps) {
             editing
               ? () => {
                   deleteGoal(editing.id);
+                  confirm({ emoji: "🗑️", title: "Objectif supprimé", detail: editing.label });
                   setEditing(null);
                 }
               : undefined
@@ -187,6 +192,8 @@ export function RewardsBoard({ initialIso }: RewardsBoardProps) {
           }}
         />
       ) : null}
+
+      {confirmationDialog}
     </div>
   );
 }

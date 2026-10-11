@@ -6,7 +6,6 @@ import { Card, CardTitle } from "./Card";
 import { MEMBERS } from "@/lib/family";
 import { useSession } from "@/lib/supabase/session";
 import { useEvents } from "@/lib/useEvents";
-import { useMeals } from "@/lib/useMeals";
 import { useShoppingList } from "@/lib/useShoppingList";
 import { useRewardGoals } from "@/lib/useRewardGoals";
 import { useStars } from "@/lib/useStars";
@@ -20,7 +19,6 @@ const WARMTH_LABEL: Record<string, string> = {
 export function SettingsView() {
   const { configured, session, member, signOut } = useSession();
   const events = useEvents();
-  const meals = useMeals();
   const shopping = useShoppingList();
   const rewardGoals = useRewardGoals();
   const stars = useStars();
@@ -35,7 +33,6 @@ export function SettingsView() {
 
   const resets: { id: string; label: string; run: () => void }[] = [
     { id: "calendrier", label: "Calendrier", run: events.resetToDemo },
-    { id: "repas", label: "Repas", run: meals.resetToDemo },
     { id: "courses", label: "Liste de courses", run: shopping.resetToDemo },
     // Une fois partagés (base connectée), les objectifs et le compteur
     // d'étoiles de Khloé ne se remettent plus à zéro depuis ce bouton :

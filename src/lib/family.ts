@@ -2,7 +2,6 @@
 
 import type {
   CalendarEvent,
-  Meal,
   Member,
   Reminder,
   Ritual,
@@ -273,14 +272,6 @@ export function demoReminders(today = todayKey()): Reminder[] {
       memberIds: ["ernestine"],
       done: false,
     },
-  ];
-}
-
-export function demoMeals(today = todayKey()): Meal[] {
-  return [
-    { id: "demo-repas-1", date: today, moment: "soir", title: "Poulet et légumes rôtis", emoji: "🍗" },
-    { id: "demo-repas-2", date: addDays(today, 1), moment: "soir", title: "Gratin de pâtes", emoji: "🧀" },
-    { id: "demo-repas-3", date: addDays(today, 2), moment: "midi", title: "Riz, poisson, salade", emoji: "🐟" },
   ];
 }
 

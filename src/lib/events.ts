@@ -141,3 +141,11 @@ export function layoutOverlapping<T extends TimeSpan>(events: T[]): PositionedEv
 
   return result;
 }
+
+/**
+ * Lien Google Maps vers le lieu d'un événement. Sur téléphone, il ouvre
+ * directement l'application Maps, prête à lancer l'itinéraire.
+ */
+export function mapsUrl(location: string): string {
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(location.trim())}`;
+}

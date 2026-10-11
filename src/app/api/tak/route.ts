@@ -2,21 +2,16 @@ import { generateObject, NoObjectGeneratedError } from "ai";
 import {
   buildTakSystemPrompt,
   describeTakAction,
-  findDishImage,
-  recipeSchema,
   takModelSchema,
   toTakAction,
-  youtubeSearchUrl,
   type TakRitual,
   type TakTurn,
 } from "@/lib/tak";
+import { buildRecipe, RECIPE_MODEL } from "@/lib/recipes";
 
 export const runtime = "nodejs";
 
-// Modèle accessible au palier gratuit d'AI Gateway : les modèles plus gros
-// (« mini », Anthropic…) y sont refusés (erreur 403 « Free tier users do not
-// have access to this model ») tant qu'aucun crédit payant n'est ajouté.
-const MODEL = "openai/gpt-5.4-nano";
+const MODEL = RECIPE_MODEL;
 
 /** Au-delà, le fil est tronqué : Tak n'a besoin que des derniers échanges. */
 const MAX_HISTORY = 10;
@@ -96,30 +91,14 @@ export async function POST(request: Request) {
 
     const recipeAction = actions.find((item) => item.action.action === "chercher_recette")?.action;
     if (recipeAction && recipeAction.action === "chercher_recette") {
-      const [{ object: recipe }, imageUrl] = await Promise.all([
-        generateObject({
-          model: MODEL,
-          schema: recipeSchema,
-          system:
-            "Tu donnes une recette simple et familiale, en français, pour une famille avec un " +
-            "jeune enfant. Des ingrédients courants, une préparation qui reste accessible.",
-          prompt: `Recette : ${recipeAction.plat}`,
-        }),
-        findDishImage(recipeAction.plat),
-      ]);
+      const recipe = await buildRecipe(recipeAction.plat);
 
       return Response.json({
         ok: true,
         reponse: raw.reponse,
         // La recette s'affiche directement : rien à confirmer pour elle.
         actions: actions.filter((item) => item.action.action !== "chercher_recette"),
-        recipe: {
-          plat: recipeAction.plat,
-          ingredients: recipe.ingredients,
-          etapes: recipe.etapes,
-          imageUrl,
-          youtubeUrl: youtubeSearchUrl(recipeAction.plat),
-        },
+        recipe,
       });
     }
 

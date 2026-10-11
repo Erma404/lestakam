@@ -3,12 +3,13 @@
 import { useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useSaveConfirmation } from "./SaveConfirmation";
 import { Avatar } from "./Avatar";
 import { Card, CardTitle } from "./Card";
 import { EventForm } from "./EventForm";
 import { ReminderForm } from "./ReminderForm";
 import { MEMBERS, memberById } from "@/lib/family";
-import { baseEventId, eventsForDay, expandEvents, sevenDayWindow } from "@/lib/events";
+import { baseEventId, eventsForDay, expandEvents, mapsUrl, sevenDayWindow } from "@/lib/events";
 import { suggestOutfit } from "@/lib/outfit";
 import { describeWeather } from "@/lib/weather";
 import { CATEGORY_ACCENT, CATEGORY_LABEL, accentClasses } from "@/lib/accents";
@@ -51,6 +52,7 @@ export function Dashboard({ initialIso }: DashboardProps) {
   const [creatingReminder, setCreatingReminder] = useState(false);
 
   const { events: allEvents, addEvent, updateEvent, deleteEvent } = useEvents();
+  const { confirm, dialog: confirmationDialog } = useSaveConfirmation();
   const { reminders, addReminder, updateReminder, toggleDone, deleteReminder } = useReminders();
   const { items: shoppingItems, toggleItem: toggleShoppingItem } = useShoppingList();
   const week = useMemo(() => sevenDayWindow(today), [today]);
@@ -60,16 +62,18 @@ export function Dashboard({ initialIso }: DashboardProps) {
   const activeDate = selectedDate && week.includes(selectedDate) ? selectedDate : today;
 
   const dayEvents = eventsForDay(events, activeDate, selectedMember);
-  // Un jour choisi dans la semaine l'emporte ; sinon, la tenue de demain
-  // dès 19 h (pour préparer les habits la veille), celle du jour dès minuit.
+  // Un jour choisi dans la semaine affiche aussi sa tenue ; sinon, celle de
+  // demain dès 19 h (pour préparer les habits la veille), celle du jour dès minuit.
   const outfitDate = selectedDate && week.includes(selectedDate) ? selectedDate : outfitDay(now);
   const focusedMember = selectedMember ? memberById(selectedMember) : undefined;
 
   function handleSaveEvent(values: NewEvent) {
     if (editingEvent) {
       updateEvent(baseEventId(editingEvent.id), values);
+      confirm({ emoji: "✏️", title: "Événement modifié", detail: values.title });
     } else {
       addEvent(values);
+      confirm({ emoji: "📅", title: "Ajouté au calendrier", detail: values.title });
     }
     setEditingEvent(null);
     setCreatingEventOn(null);
@@ -78,14 +82,17 @@ export function Dashboard({ initialIso }: DashboardProps) {
   function handleDeleteEvent() {
     if (!editingEvent) return;
     deleteEvent(baseEventId(editingEvent.id));
+    confirm({ emoji: "🗑️", title: "Événement supprimé", detail: editingEvent.title });
     setEditingEvent(null);
   }
 
   function handleSaveReminder(values: NewReminder) {
     if (editingReminder) {
       updateReminder(editingReminder.id, values);
+      confirm({ emoji: "✏️", title: "Rappel modifié", detail: values.label });
     } else {
       addReminder(values);
+      confirm({ emoji: "📌", title: "Rappel ajouté", detail: values.label });
     }
     setEditingReminder(null);
     setCreatingReminder(false);
@@ -165,6 +172,7 @@ export function Dashboard({ initialIso }: DashboardProps) {
             editingReminder
               ? () => {
                   deleteReminder(editingReminder.id);
+                  confirm({ emoji: "🗑️", title: "Rappel supprimé", detail: editingReminder.label });
                   setEditingReminder(null);
                 }
               : undefined
@@ -175,6 +183,8 @@ export function Dashboard({ initialIso }: DashboardProps) {
           }}
         />
       ) : null}
+
+      {confirmationDialog}
     </div>
   );
 }
@@ -504,11 +514,11 @@ function EventRow({ event, onEdit }: { event: CalendarEvent; onEdit: () => void 
     .filter((member): member is NonNullable<typeof member> => Boolean(member));
 
   return (
-    <li>
+    <li className={`flex items-center gap-2 rounded-3xl ${accent.soft} pr-2`}>
       <button
         type="button"
         onClick={onEdit}
-        className={`flex w-full items-center gap-3 rounded-3xl ${accent.soft} px-4 py-3 text-left hover:brightness-97`}
+        className="flex min-w-0 flex-1 items-center gap-3 rounded-3xl px-4 py-3 text-left hover:brightness-97"
       >
         <div className="w-16 shrink-0 text-center">
           <p className="text-base font-extrabold text-ink">{event.startTime ?? "Journée"}</p>
@@ -534,6 +544,18 @@ function EventRow({ event, onEdit }: { event: CalendarEvent; onEdit: () => void 
           ))}
         </div>
       </button>
+      {event.location ? (
+        <a
+          href={mapsUrl(event.location)}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label={`Ouvrir ${event.location} dans Google Maps`}
+          title="Itinéraire"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white/80 text-xl hover:bg-white"
+        >
+          📍
+        </a>
+      ) : null}
     </li>
   );
 }

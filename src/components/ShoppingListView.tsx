@@ -3,12 +3,14 @@
 import { useState } from "react";
 import { Card, CardTitle } from "./Card";
 import { ShoppingItemForm } from "./ShoppingItemForm";
+import { useSaveConfirmation } from "./SaveConfirmation";
 import { groupByAisle, remainingCount } from "@/lib/shopping";
 import { useShoppingList } from "@/lib/useShoppingList";
 import type { ShoppingItem } from "@/lib/types";
 
 export function ShoppingListView() {
   const { items, addItem, updateItem, toggleItem, deleteItem, clearChecked } = useShoppingList();
+  const { confirm, dialog: confirmationDialog } = useSaveConfirmation();
   const [editing, setEditing] = useState<ShoppingItem | null>(null);
   const [creating, setCreating] = useState(false);
   const [quickLabel, setQuickLabel] = useState("");
@@ -134,8 +136,10 @@ export function ShoppingListView() {
           onSave={(values) => {
             if (editing) {
               updateItem(editing.id, values);
+              confirm({ emoji: "✏️", title: "Article modifié", detail: values.label });
             } else {
               addItem(values);
+              confirm({ emoji: "🛒", title: "Ajouté à la liste", detail: values.label });
             }
             setEditing(null);
             setCreating(false);
@@ -144,6 +148,7 @@ export function ShoppingListView() {
             editing
               ? () => {
                   deleteItem(editing.id);
+                  confirm({ emoji: "🗑️", title: "Article supprimé", detail: editing.label });
                   setEditing(null);
                 }
               : undefined
@@ -154,6 +159,8 @@ export function ShoppingListView() {
           }}
         />
       ) : null}
+
+      {confirmationDialog}
     </div>
   );
 }

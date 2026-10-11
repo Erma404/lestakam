@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { RecipeCard, type Recipe } from "./RecipeCard";
 import { useEvents } from "@/lib/useEvents";
-import { useMeals } from "@/lib/useMeals";
 import { useShoppingList } from "@/lib/useShoppingList";
 import { useRituals } from "@/lib/useRituals";
 import { useRitualStatus } from "@/lib/useRitualStatus";
@@ -86,7 +85,6 @@ export function TakWidget() {
   const today = todayKey();
 
   const { events, addEvent } = useEvents();
-  const { meals, addMeal } = useMeals();
   const { items: shoppingItems, addItem } = useShoppingList();
   const { rituals } = useRituals(today);
   const { statuses, markValidated } = useRitualStatus(today);
@@ -140,7 +138,6 @@ export function TakWidget() {
       const context = buildTakContext({
         today,
         events,
-        meals,
         shoppingItems,
         starEntries,
         goals,
@@ -204,7 +201,7 @@ export function TakWidget() {
         setLoading(false);
       }
     },
-    [loading, messages, rituals, statuses, today, events, meals, shoppingItems, starEntries, goals, forecast],
+    [loading, messages, rituals, statuses, today, events, shoppingItems, starEntries, goals, forecast],
   );
 
   function toggleListening() {
@@ -256,9 +253,6 @@ export function TakWidget() {
           skipSchoolHolidays: action.horsVacancesScolaires,
           notes: action.note,
         });
-        return true;
-      case "planifier_repas":
-        addMeal({ title: action.titre, date: action.date, moment: action.moment, emoji: "🍽️" });
         return true;
       case "ajouter_article":
         addItem({ label: action.label, quantity: action.quantite, aisle: action.rayon });

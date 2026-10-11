@@ -1,6 +1,6 @@
 # LesTakam
 
-Le tableau de bord de la famille : calendrier, rituels, météo, repas et récompenses,
+Le tableau de bord de la famille : calendrier, rituels, météo, courses et récompenses,
 sur un seul écran.
 
 Conçu pour deux usages :
@@ -32,15 +32,13 @@ Conçu pour deux usages :
   qu'un lien cliquable : certaines messageries et antivirus ouvrent les liens tout
   seuls pour les vérifier, ce qui grille un lien à usage unique avant même que la
   personne ait cliqué dessus.
-- **Repas** : planning à 7 jours (midi et soir), avec un envoi direct d'un repas vers
-  la liste de courses.
 - **Liste de courses** : ajout rapide, regroupement par rayon, purge des articles cochés.
 - **Récompenses** : objectifs personnalisables par les parents, compteur d'étoiles
   cumulé (semaine, mois, depuis le début) qui ne repart plus de zéro chaque matin,
   déblocage automatique et historique des récompenses obtenues.
 - **Réglages** : état de la connexion, déconnexion, trombinoscope du foyer, remise
   à zéro de chaque rubrique locale.
-- **Tak**, l'assistant vocal : on parle, il exécute (ajouter un événement, un repas,
+- **Tak**, l'assistant vocal : on parle, il exécute (ajouter un événement,
   un article, valider un rituel) ou cherche une recette. Voir [Activer Tak](#activer-tak).
 
 ## Ce qui reste à construire
@@ -87,7 +85,7 @@ Vercel et ne peut pas être faite par un agent — il faut la faire soi-même de
 tableau de bord. Sans elle, Tak répond simplement qu'il est indisponible ; le reste
 de l'application continue de fonctionner normalement.
 
-Tak ne fait que des ajouts (calendrier, repas, liste de courses, rituel validé) et
+Tak ne fait que des ajouts (calendrier, liste de courses, rituel validé) et
 demande toujours une confirmation avant d'agir, sauf pour une recherche de recette,
 qui n'importe aucune donnée. Il ne répond jamais à l'oral.
 
