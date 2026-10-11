@@ -13,11 +13,10 @@ import {
 
 export const runtime = "nodejs";
 
-// Modèle accessible au palier gratuit d'AI Gateway (les modèles Anthropic ne le
-// sont pas). Tak répond désormais à de vraies questions et combine plusieurs
-// actions : la version « mini » raisonne nettement mieux que « nano », pour un
-// coût qui reste de l'ordre du dixième de centime par question.
-const MODEL = "openai/gpt-5.4-mini";
+// Modèle accessible au palier gratuit d'AI Gateway : les modèles plus gros
+// (« mini », Anthropic…) y sont refusés (erreur 403 « Free tier users do not
+// have access to this model ») tant qu'aucun crédit payant n'est ajouté.
+const MODEL = "openai/gpt-5.4-nano";
 
 /** Au-delà, le fil est tronqué : Tak n'a besoin que des derniers échanges. */
 const MAX_HISTORY = 10;
