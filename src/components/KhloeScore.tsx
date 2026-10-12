@@ -4,9 +4,10 @@ import { useState } from "react";
 import { Avatar } from "./Avatar";
 import { CardLink } from "./Card";
 import { Icon } from "./Icon";
+import { LevelBadge, StreakFlame } from "./Badges";
 import { memberById } from "@/lib/family";
 import { currentMoment } from "@/lib/dates";
-import { nextGoal } from "@/lib/rewards";
+import { nextGoal, rewardCycle } from "@/lib/rewards";
 import { useRituals } from "@/lib/useRituals";
 import { useRitualStatus } from "@/lib/useRitualStatus";
 import { useRewardGoals } from "@/lib/useRewardGoals";
@@ -42,7 +43,9 @@ export function KhloeScore({ today, now }: { today: string; now: Date }) {
   const starsPossible = rituals.reduce((total, ritual) => total + ritual.stars, 0);
 
   const goal = nextGoal(goals);
-  const remaining = goal ? Math.max(goal.starsRequired - starsEarned, 0) : 0;
+  // La progression vers les récompenses repart à 0 à chaque tour (voir rewardCycle).
+  const cycle = rewardCycle(goals, starsEarned);
+  const remaining = goal ? Math.max(goal.starsRequired - cycle.stars, 0) : 0;
   const level = levelFor(starsEarned);
   const streak = currentStreak(entries, today);
   const perfectDay = starsPossible > 0 && starsToday === starsPossible;
@@ -52,7 +55,7 @@ export function KhloeScore({ today, now }: { today: string; now: Date }) {
     tap(ritual);
   }
 
-  const percent = goal ? Math.min(Math.round((starsEarned / goal.starsRequired) * 100), 100) : 100;
+  const percent = goal ? Math.min(Math.round((cycle.stars / goal.starsRequired) * 100), 100) : 100;
 
   return (
     <section className="rounded-card bg-surface p-5 sm:p-6" aria-labelledby="score-khloe">
@@ -69,32 +72,38 @@ export function KhloeScore({ today, now }: { today: string; now: Date }) {
         <CardLink href="/recompenses">Récompenses</CardLink>
       </header>
 
-      <div className="mb-4 grid grid-cols-2 gap-2">
-        <div className="rounded-2xl bg-lilac-soft px-4 py-3">
-          <p className="text-sm text-ink-soft">Niveau {level.number}</p>
-          <p className="text-base font-medium text-ink">{level.name}</p>
-          {level.span ? (
-            <div className="mt-2 h-1.5 overflow-hidden rounded-pill bg-surface" aria-hidden>
-              <div
-                className="h-full rounded-pill bg-lilac transition-[width] duration-500"
-                style={{ width: `${Math.round((level.progress / level.span) * 100)}%` }}
-              />
-            </div>
-          ) : null}
-          {level.nextName && level.span ? (
-            <p className="mt-1 text-xs text-ink-soft">
-              {level.span - level.progress} étoiles avant « {level.nextName} »
-            </p>
-          ) : null}
+      <div className="mb-4 grid gap-2 sm:grid-cols-2">
+        <div className="flex items-center gap-3 rounded-2xl bg-lilac-soft px-3 py-3">
+          <LevelBadge level={level.number} className="h-14 w-14 shrink-0" />
+          <div className="min-w-0 flex-1">
+            <p className="text-sm text-ink-soft">Niveau {level.number}</p>
+            <p className="text-base font-medium text-ink">{level.name}</p>
+            {level.span ? (
+              <div className="mt-1.5 h-1.5 overflow-hidden rounded-pill bg-surface" aria-hidden>
+                <div
+                  className="h-full rounded-pill bg-lilac transition-[width] duration-500"
+                  style={{ width: `${Math.round((level.progress / level.span) * 100)}%` }}
+                />
+              </div>
+            ) : null}
+            {level.nextName && level.span ? (
+              <p className="mt-1 text-xs text-ink-soft">
+                {level.span - level.progress} étoiles avant « {level.nextName} »
+              </p>
+            ) : null}
+          </div>
         </div>
-        <div className="rounded-2xl bg-coral-soft px-4 py-3">
-          <p className="text-sm text-ink-soft">Série en cours</p>
-          <p className="text-base font-medium text-ink">
-            {streak} jour{streak > 1 ? "s" : ""} d&apos;affilée
-          </p>
-          <p className="mt-1 text-xs text-ink-soft">
-            {streak === 0 ? "Un rituel aujourd'hui pour la lancer !" : "Ne la laisse pas s'éteindre !"}
-          </p>
+        <div className="flex items-center gap-3 rounded-2xl bg-coral-soft px-3 py-3">
+          <StreakFlame lit={streak > 0} className="h-14 w-14 shrink-0" />
+          <div className="min-w-0 flex-1">
+            <p className="text-sm text-ink-soft">Série en cours</p>
+            <p className="text-base font-medium text-ink">
+              {streak} jour{streak > 1 ? "s" : ""} d&apos;affilée
+            </p>
+            <p className="mt-1 text-xs text-ink-soft">
+              {streak === 0 ? "Un rituel aujourd'hui pour l'allumer !" : "Ne la laisse pas s'éteindre !"}
+            </p>
+          </div>
         </div>
       </div>
 
@@ -109,13 +118,13 @@ export function KhloeScore({ today, now }: { today: string; now: Date }) {
           <div className="mb-2 flex items-baseline justify-between gap-3">
             <p className="text-base font-medium text-ink">{goal.label}</p>
             <p className="shrink-0 text-sm text-ink-soft tabular-nums">
-              {starsEarned} / {goal.starsRequired}
+              {cycle.stars} / {goal.starsRequired}
             </p>
           </div>
           <div
             className="h-3 overflow-hidden rounded-pill bg-surface"
             role="progressbar"
-            aria-valuenow={starsEarned}
+            aria-valuenow={cycle.stars}
             aria-valuemin={0}
             aria-valuemax={goal.starsRequired}
             aria-label={`Progression vers ${goal.label}`}

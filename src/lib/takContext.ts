@@ -8,7 +8,7 @@ import { CATEGORY_LABEL } from "./accents";
 import { addDays, formatLongDate } from "./dates";
 import { expandEvents } from "./events";
 import { describeWeather } from "./weather";
-import { nextGoal, starsThisWeek, type StarEntry } from "./rewards";
+import { nextGoal, rewardCycle, starsThisWeek, type StarEntry } from "./rewards";
 import type { CalendarEvent, RewardGoal, ShoppingItem, WeatherForecast } from "./types";
 
 /** Fenêtre du calendrier transmise à Tak : assez pour « ce week-end » ou « la semaine prochaine ». */
@@ -78,13 +78,14 @@ export function buildTakContext(input: TakContextInput): string {
 
   const total = input.starEntries.reduce((sum, entry) => sum + entry.stars, 0);
   const upcoming = nextGoal(input.goals);
+  const cycle = rewardCycle(input.goals, total);
   const achieved = input.goals.filter((goal) => goal.achievedOn).map((goal) => goal.label);
   sections.push(
     [
       "ÉTOILES DE KHLOÉ",
       `Total : ${total} étoiles, dont ${starsThisWeek(input.starEntries, input.today)} cette semaine.`,
       upcoming
-        ? `Prochain objectif : ${upcoming.label} à ${upcoming.starsRequired} étoiles (encore ${Math.max(upcoming.starsRequired - total, 0)}).`
+        ? `Tour n°${cycle.round} : ${cycle.stars} étoiles sur ${cycle.size} (le compteur repart à 0 après le dernier objectif). Prochain objectif : ${upcoming.label} à ${upcoming.starsRequired} étoiles (encore ${Math.max(upcoming.starsRequired - cycle.stars, 0)}).`
         : "Aucun objectif en cours.",
       achieved.length > 0 ? `Récompenses déjà gagnées : ${achieved.join(", ")}.` : "",
     ]

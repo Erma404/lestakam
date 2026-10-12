@@ -47,3 +47,34 @@ export function achievedGoals(goals: RewardGoal[]): RewardGoal[] {
 export function goalsToUnlock(goals: RewardGoal[], total: number): RewardGoal[] {
   return goals.filter((goal) => !goal.achievedOn && goal.starsRequired <= total);
 }
+
+/**
+ * Les récompenses fonctionnent par tours : une fois l'objectif le plus élevé
+ * atteint (ex. 60 étoiles), le compteur de progression repart à 0 et tous
+ * les objectifs peuvent être regagnés. Le total « depuis le début » et le
+ * niveau, eux, ne repartent jamais à zéro.
+ */
+export interface RewardCycle {
+  /** Numéro du tour en cours, à partir de 1. */
+  round: number;
+  /** Étoiles comptées dans le tour en cours (60 tant que le dernier objectif vient d'être atteint). */
+  stars: number;
+  /** Étoiles nécessaires pour boucler le tour. */
+  size: number;
+}
+
+export function rewardCycle(goals: RewardGoal[], total: number): RewardCycle {
+  const size = goals.reduce((max, goal) => Math.max(max, goal.starsRequired), 0);
+  if (size <= 0 || total <= 0) return { round: 1, stars: Math.max(total, 0), size };
+  // 60 reste dans le 1er tour (objectif final atteint) ; 61 ouvre le 2e tour avec 1 étoile.
+  const completed = Math.floor((total - 1) / size);
+  return { round: completed + 1, stars: total - completed * size, size };
+}
+
+/**
+ * Vrai quand un nouveau tour a commencé mais que des objectifs portent
+ * encore la date du tour précédent : il faut les remettre en jeu.
+ */
+export function needsNewRound(goals: RewardGoal[], cycleStars: number): boolean {
+  return goals.some((goal) => goal.achievedOn && goal.starsRequired > cycleStars);
+}

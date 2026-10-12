@@ -183,10 +183,28 @@ export function useRewardGoals() {
     [shared, localGoals, setLocalStored],
   );
 
+  /** Nouveau tour : tous les objectifs redeviennent à gagner (le compteur de progression repart à 0). */
+  const startNewRound = useCallback(() => {
+    if (shared && khloe) {
+      const supabase = getSupabaseClient();
+      if (!supabase) return;
+      supabase
+        .from("reward_goals")
+        .update({ achieved_on: null })
+        .eq("member_id", khloe.id)
+        .not("achieved_on", "is", null)
+        .then(({ error }) => {
+          if (error) console.error("Remise en jeu des objectifs impossible :", error);
+        });
+      return;
+    }
+    setLocalStored(localGoals.map((goal) => ({ ...goal, achievedOn: undefined })));
+  }, [shared, khloe, localGoals, setLocalStored]);
+
   const resetToDemo = useCallback(() => {
     if (shared) return;
     setLocalStored(null);
   }, [shared, setLocalStored]);
 
-  return { goals, addGoal, updateGoal, deleteGoal, markAchieved, resetToDemo, shared };
+  return { goals, addGoal, updateGoal, deleteGoal, markAchieved, startNewRound, resetToDemo, shared };
 }

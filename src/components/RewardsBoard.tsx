@@ -7,7 +7,7 @@ import { RewardGoalForm } from "./RewardGoalForm";
 import { memberById } from "@/lib/family";
 import { useStars } from "@/lib/useStars";
 import { useRewardGoals } from "@/lib/useRewardGoals";
-import { nextGoal, starsThisMonth, starsThisWeek } from "@/lib/rewards";
+import { nextGoal, rewardCycle, starsThisMonth, starsThisWeek } from "@/lib/rewards";
 import { formatLongDate, todayKey } from "@/lib/dates";
 import { useNow } from "@/lib/useNow";
 import type { RewardGoal } from "@/lib/types";
@@ -29,6 +29,8 @@ export function RewardsBoard({ initialIso }: RewardsBoardProps) {
   const [confirmingReset, setConfirmingReset] = useState(false);
 
   const upcoming = nextGoal(goals);
+  // Progression du tour en cours : repart à 0 une fois le dernier objectif atteint.
+  const cycle = rewardCycle(goals, total);
   const khloe = memberById("khloe");
 
   return (
@@ -68,12 +70,12 @@ export function RewardsBoard({ initialIso }: RewardsBoardProps) {
               </h2>
             </div>
           </div>
-          <div className="mt-4 h-4 overflow-hidden rounded-pill bg-surface" role="progressbar" aria-valuenow={total} aria-valuemin={0} aria-valuemax={upcoming.starsRequired} aria-label={`Progression vers ${upcoming.label}`}>
-            <div className="h-full rounded-pill bg-coral transition-[width] duration-500" style={{ width: `${Math.min(Math.round((total / upcoming.starsRequired) * 100), 100)}%` }} />
+          <div className="mt-4 h-4 overflow-hidden rounded-pill bg-surface" role="progressbar" aria-valuenow={cycle.stars} aria-valuemin={0} aria-valuemax={upcoming.starsRequired} aria-label={`Progression vers ${upcoming.label}`}>
+            <div className="h-full rounded-pill bg-coral transition-[width] duration-500" style={{ width: `${Math.min(Math.round((cycle.stars / upcoming.starsRequired) * 100), 100)}%` }} />
           </div>
           <p className="mt-2 text-base text-ink">
-            {total} / {upcoming.starsRequired} étoiles · encore{" "}
-            {Math.max(upcoming.starsRequired - total, 0)} pour la débloquer
+            {cycle.stars} / {upcoming.starsRequired} étoiles · encore{" "}
+            {Math.max(upcoming.starsRequired - cycle.stars, 0)} pour la débloquer
           </p>
         </section>
       ) : null}
@@ -82,6 +84,10 @@ export function RewardsBoard({ initialIso }: RewardsBoardProps) {
         <h2 id="tous-objectifs" className="mb-3 font-display text-xl font-medium text-ink">
           Le chemin des récompenses
         </h2>
+        <p className="-mt-2 mb-3 text-sm text-ink-soft">
+          {cycle.round > 1 ? `Tour n°${cycle.round} · ` : ""}
+          Une fois les {cycle.size} étoiles atteintes, le compteur repart à 0 et tout est à regagner.
+        </p>
         {goals.length === 0 ? (
           <p className="rounded-card bg-surface p-5 text-base text-ink-soft">
             Aucun objectif pour le moment. Ajoutez-en un pour motiver Khloé !
@@ -92,7 +98,7 @@ export function RewardsBoard({ initialIso }: RewardsBoardProps) {
               .sort((a, b) => a.starsRequired - b.starsRequired)
               .map((goal) => {
                 const unlocked = Boolean(goal.achievedOn);
-                const percent = Math.min(Math.round((total / goal.starsRequired) * 100), 100);
+                const percent = Math.min(Math.round((cycle.stars / goal.starsRequired) * 100), 100);
                 return (
                   <li key={goal.id}>
                     <button
@@ -120,7 +126,7 @@ export function RewardsBoard({ initialIso }: RewardsBoardProps) {
                               <span className="block h-full rounded-pill bg-sun" style={{ width: `${percent}%` }} />
                             </span>
                             <span className="mt-1 block text-sm text-ink-soft tabular-nums">
-                              {Math.min(total, goal.starsRequired)} / {goal.starsRequired} étoiles
+                              {Math.min(cycle.stars, goal.starsRequired)} / {goal.starsRequired} étoiles
                             </span>
                           </>
                         )}

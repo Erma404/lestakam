@@ -5,13 +5,14 @@ import { memberById } from "@/lib/family";
 import { Avatar } from "./Avatar";
 import { CardLink } from "./Card";
 import { Icon } from "./Icon";
+import { LevelBadge, StreakFlame } from "./Badges";
 import { currentMoment, formatLongDate, todayKey } from "@/lib/dates";
 import { useNow } from "@/lib/useNow";
 import { useRituals } from "@/lib/useRituals";
 import { useRitualStatus } from "@/lib/useRitualStatus";
 import { useRewardGoals } from "@/lib/useRewardGoals";
 import { useStars } from "@/lib/useStars";
-import { nextGoal as pickNextGoal } from "@/lib/rewards";
+import { nextGoal as pickNextGoal, rewardCycle } from "@/lib/rewards";
 import { currentStreak, levelFor } from "@/lib/gamification";
 import type { MomentOfDay, Ritual } from "@/lib/types";
 
@@ -51,6 +52,7 @@ export function RitualsBoard({ initialIso }: RitualsBoardProps) {
   const perfectDay = starsPossible > 0 && starsToday === starsPossible;
 
   const goal = pickNextGoal(goals);
+  const cycle = rewardCycle(goals, starsEarned);
   const level = levelFor(starsEarned);
   const streak = currentStreak(entries, today);
 
@@ -79,21 +81,27 @@ export function RitualsBoard({ initialIso }: RitualsBoardProps) {
             <span className="text-lg"> / {starsPossible}</span>
           </p>
         </div>
-        <div className="rounded-card bg-surface px-5 py-4">
-          <p className="text-sm text-ink-soft">Niveau {level.number}</p>
-          <p className="text-xl font-medium text-ink">{level.name}</p>
-          {level.span ? (
-            <ProgressBar value={level.progress} max={level.span} tone="bg-lilac" label="Progression vers le niveau suivant" small />
-          ) : null}
+        <div className="flex items-center gap-3 rounded-card bg-surface px-4 py-4">
+          <LevelBadge level={level.number} className="h-14 w-14 shrink-0" />
+          <div className="min-w-0 flex-1">
+            <p className="text-sm text-ink-soft">Niveau {level.number}</p>
+            <p className="text-xl font-medium text-ink">{level.name}</p>
+            {level.span ? (
+              <ProgressBar value={level.progress} max={level.span} tone="bg-lilac" label="Progression vers le niveau suivant" small />
+            ) : null}
+          </div>
         </div>
-        <div className="rounded-card bg-surface px-5 py-4">
-          <p className="text-sm text-ink-soft">Série en cours</p>
-          <p className="text-xl font-medium text-ink">
-            {streak} jour{streak > 1 ? "s" : ""} d&apos;affilée
-          </p>
-          <p className="text-sm text-ink-soft">
-            {streak === 0 ? "Un rituel pour la lancer !" : "Continue comme ça !"}
-          </p>
+        <div className="flex items-center gap-3 rounded-card bg-surface px-4 py-4">
+          <StreakFlame lit={streak > 0} className="h-14 w-14 shrink-0" />
+          <div className="min-w-0 flex-1">
+            <p className="text-sm text-ink-soft">Série en cours</p>
+            <p className="text-xl font-medium text-ink">
+              {streak} jour{streak > 1 ? "s" : ""} d&apos;affilée
+            </p>
+            <p className="text-sm text-ink-soft">
+              {streak === 0 ? "Un rituel pour l'allumer !" : "Continue comme ça !"}
+            </p>
+          </div>
         </div>
       </section>
 
@@ -196,10 +204,10 @@ export function RitualsBoard({ initialIso }: RitualsBoardProps) {
             </div>
             <CardLink href="/recompenses">Récompenses</CardLink>
           </div>
-          <ProgressBar value={starsEarned} max={goal.starsRequired} label={`Progression vers ${goal.label}`} />
+          <ProgressBar value={cycle.stars} max={goal.starsRequired} label={`Progression vers ${goal.label}`} />
           <p className="mt-2 text-sm text-ink-soft">
-            {starsEarned} / {goal.starsRequired} étoiles · encore{" "}
-            {Math.max(goal.starsRequired - starsEarned, 0)} pour y arriver.
+            {cycle.stars} / {goal.starsRequired} étoiles · encore{" "}
+            {Math.max(goal.starsRequired - cycle.stars, 0)} pour y arriver.
           </p>
         </section>
       ) : null}

@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useStars } from "@/lib/useStars";
 import { useRewardGoals } from "@/lib/useRewardGoals";
-import { goalsToUnlock } from "@/lib/rewards";
+import { goalsToUnlock, needsNewRound, rewardCycle } from "@/lib/rewards";
 import { todayKey } from "@/lib/dates";
 import { memberById } from "@/lib/family";
 import type { RewardGoal } from "@/lib/types";
@@ -18,14 +18,21 @@ const CONFETTI_COLORS = ["#f2c14e", "#e8603f", "#1f6b45", "#7ba7d9", "#e58fa4", 
  */
 export function RewardCelebration() {
   const { total } = useStars();
-  const { goals, markAchieved } = useRewardGoals();
+  const { goals, markAchieved, startNewRound } = useRewardGoals();
   const [celebrating, setCelebrating] = useState<RewardGoal | null>(null);
   // Évite de fêter deux fois le même objectif le temps que le stockage
   // renvoie la date de déblocage.
   const celebrated = useRef(new Set<string>());
 
   useEffect(() => {
-    const toUnlock = goalsToUnlock(goals, total).filter((goal) => !celebrated.current.has(goal.id));
+    const cycle = rewardCycle(goals, total);
+    // Le dernier objectif est derrière nous : nouveau tour, tout est remis en jeu.
+    if (needsNewRound(goals, cycle.stars)) {
+      celebrated.current.clear();
+      startNewRound();
+      return;
+    }
+    const toUnlock = goalsToUnlock(goals, cycle.stars).filter((goal) => !celebrated.current.has(goal.id));
     if (toUnlock.length === 0) return;
     const today = todayKey(new Date());
     for (const goal of toUnlock) {
@@ -36,13 +43,32 @@ export function RewardCelebration() {
     const best = [...toUnlock].sort((a, b) => b.starsRequired - a.starsRequired)[0];
     const timer = window.setTimeout(() => setCelebrating(best), 0);
     return () => window.clearTimeout(timer);
-  }, [goals, total, markAchieved]);
+  }, [goals, total, markAchieved, startNewRound]);
 
   if (!celebrating) return null;
-  return <CelebrationOverlay goal={celebrating} onClose={() => setCelebrating(null)} />;
+  const finalGoal = goals.reduce<RewardGoal | null>(
+    (best, goal) => (!best || goal.starsRequired > best.starsRequired ? goal : best),
+    null,
+  );
+  return (
+    <CelebrationOverlay
+      goal={celebrating}
+      isFinal={finalGoal?.id === celebrating.id}
+      onClose={() => setCelebrating(null)}
+    />
+  );
 }
 
-function CelebrationOverlay({ goal, onClose }: { goal: RewardGoal; onClose: () => void }) {
+function CelebrationOverlay({
+  goal,
+  isFinal,
+  onClose,
+}: {
+  goal: RewardGoal;
+  /** Dernier objectif du tour : on annonce que le compteur repart à 0. */
+  isFinal: boolean;
+  onClose: () => void;
+}) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const firstName = memberById(goal.memberId)?.firstName ?? "Khloé";
 
@@ -131,7 +157,9 @@ function CelebrationOverlay({ goal, onClose }: { goal: RewardGoal; onClose: () =
           Tu as gagné : {goal.label}
         </p>
         <p className="mt-1 text-base font-medium text-ink-soft">
-          {goal.starsRequired} étoiles récoltées. Continue tes efforts !
+          {isFinal
+            ? `${goal.starsRequired} étoiles, tous les objectifs sont gagnés ! Le compteur repart à 0 pour un nouveau tour.`
+            : `${goal.starsRequired} étoiles récoltées. Continue tes efforts !`}
         </p>
         <button
           type="button"

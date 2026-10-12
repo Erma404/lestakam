@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 import {
   achievedGoals,
   goalsToUnlock,
+  needsNewRound,
   nextGoal,
+  rewardCycle,
   startOfMonth,
   starsSince,
   starsThisMonth,
@@ -93,5 +95,28 @@ describe("goalsToUnlock", () => {
 
   it("ne renvoie rien si aucun seuil n'est atteint", () => {
     expect(goalsToUnlock([parc, surprise], 5)).toEqual([]);
+  });
+});
+
+describe("rewardCycle", () => {
+  const goals = [
+    { id: "a", memberId: "khloe" as const, label: "Parc", emoji: "🛝", starsRequired: 10 },
+    { id: "b", memberId: "khloe" as const, label: "Restaurant", emoji: "🍽️", starsRequired: 60 },
+  ];
+
+  it("compte dans le premier tour jusqu'à 60 inclus", () => {
+    expect(rewardCycle(goals, 42)).toEqual({ round: 1, stars: 42, size: 60 });
+    expect(rewardCycle(goals, 60)).toEqual({ round: 1, stars: 60, size: 60 });
+  });
+
+  it("repart à zéro après le dernier objectif", () => {
+    expect(rewardCycle(goals, 61)).toEqual({ round: 2, stars: 1, size: 60 });
+    expect(rewardCycle(goals, 125)).toEqual({ round: 3, stars: 5, size: 60 });
+  });
+
+  it("remet les objectifs en jeu au début d'un nouveau tour", () => {
+    const won = goals.map((goal) => ({ ...goal, achievedOn: "2026-10-01" }));
+    expect(needsNewRound(won, 60)).toBe(false);
+    expect(needsNewRound(won, 1)).toBe(true);
   });
 });
