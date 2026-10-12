@@ -7,7 +7,8 @@
 --    validé par un parent) ;
 --  - « 15 min de lecture » : en semaine, après le goûter (la pause lecture
 --    du week-end reste inchangée) ;
---  - « 3 heures sans écran » reste un challenge de l'après-midi.
+--  - « 3 heures sans écran » : l'après-midi du week-end seulement.
+-- (Déjà appliqué le 12/10/2026 depuis Réglages > La journée de Khloé.)
 -- =====================================================================
 
 insert into rituals (household_id, member_id, label, emoji, moment, scheduled_time, stars, needs_parent_approval, sort_order, days)
@@ -26,9 +27,9 @@ where m.first_name = 'Khloé'
     select 1 from rituals r where r.member_id = m.id and r.label = '15 min de lecture'
   );
 
--- Le challenge sans écran de l'après-midi reste bien rangé l'après-midi.
-update rituals set moment = 'apres-midi'
-where label = '3 heures sans écran' and moment <> 'apres-midi';
+-- « 3 heures sans écran » : l'après-midi, le week-end seulement.
+update rituals set moment = 'apres-midi', days = '{0,6}'
+where label = '3 heures sans écran';
 
 -- Vérification : les rituels de Khloé, dans l'ordre de la journée.
 select label, moment, scheduled_time, stars, days

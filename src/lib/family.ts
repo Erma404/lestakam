@@ -136,8 +136,10 @@ export const RITUALS: Ritual[] = [
     emoji: "📵",
     moment: "apres-midi",
     time: "17:00",
-    stars: 5,
+    stars: 2,
     needsParentApproval: true,
+    // Challenge du week-end ; en semaine, c'est 15 min de lecture.
+    days: [0, 6],
   },
   {
     id: "weekend-lecture",

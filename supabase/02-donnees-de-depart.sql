@@ -76,7 +76,7 @@ begin
       (foyer_id, membre_khloe, 'S''habiller toute seule',    '👗', 'matin',      '07:45', 1, false, 3,  null),
       (foyer_id, membre_khloe, 'Préparer le cartable',       '🎒', 'matin',      '08:00', 1, false, 4,  '{1,2,3,4,5}'),
       (foyer_id, membre_khloe, 'Goûter et ranger l''assiette','🍎', 'apres-midi', '16:30', 1, false, 5,  null),
-      (foyer_id, membre_khloe, '3 heures sans écran',        '📵', 'apres-midi', '17:00', 2, true,  6,  null),
+      (foyer_id, membre_khloe, '3 heures sans écran',        '📵', 'apres-midi', '17:00', 2, true,  6,  '{0,6}'),
       (foyer_id, membre_khloe, 'Ranger les jouets',          '🧸', 'apres-midi', '17:30', 1, true,  7,  null),
       (foyer_id, membre_khloe, 'Pause lecture (15 min)',     '📚', 'apres-midi', '15:00', 1, false, 8,  '{0,6}'),
       (foyer_id, membre_khloe, '15 min de lecture',          '📚', 'apres-midi', '18:00', 1, false, 8,  '{1,2,3,4,5}'),
