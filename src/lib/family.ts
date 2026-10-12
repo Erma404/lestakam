@@ -66,6 +66,18 @@ export const RITUALS: Ritual[] = [
     needsParentApproval: true,
   },
   {
+    id: "matin-reveil-sans-ecran",
+    memberId: "khloe",
+    label: "Réveil sans écran",
+    emoji: "⏰",
+    moment: "matin",
+    time: "07:15",
+    stars: 2,
+    needsParentApproval: true,
+    // Challenge des jours d'école : pas d'écran entre le réveil et le départ.
+    days: [1, 2, 3, 4, 5],
+  },
+  {
     id: "matin-visage",
     memberId: "khloe",
     label: "Nettoyer le visage",
@@ -138,6 +150,18 @@ export const RITUALS: Ritual[] = [
     needsParentApproval: false,
     // Seulement le week-end, quand Khloé est à la maison.
     days: [0, 6],
+  },
+  {
+    id: "semaine-lecture",
+    memberId: "khloe",
+    label: "15 min de lecture",
+    emoji: "📚",
+    moment: "apres-midi",
+    time: "18:00",
+    stars: 1,
+    needsParentApproval: false,
+    // Challenge des jours d'école, après le goûter.
+    days: [1, 2, 3, 4, 5],
   },
   {
     id: "soir-douche",
