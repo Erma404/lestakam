@@ -62,8 +62,15 @@ export type EventCategory =
 export interface CalendarEvent {
   id: string;
   title: string;
-  /** Date au format AAAA-MM-JJ. */
+  /** Date au format AAAA-MM-JJ (premier jour, pour un événement sur plusieurs jours). */
   date: string;
+  /** Dernier jour inclus, AAAA-MM-JJ, pour un événement sur plusieurs jours (ex. un voyage). */
+  endDate?: string;
+  /**
+   * Sur une occurrence affichée d'un événement de plusieurs jours : son
+   * premier jour réel, pour que le formulaire de modification reparte de là.
+   */
+  spanStart?: string;
   /** Heure de début au format HH:MM, absente si l'événement dure toute la journée. */
   startTime?: string;
   endTime?: string;

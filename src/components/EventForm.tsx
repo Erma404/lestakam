@@ -36,7 +36,9 @@ export function EventForm({
   const panelRef = useRef<HTMLDivElement>(null);
 
   const [title, setTitle] = useState(event?.title ?? "");
-  const [date, setDate] = useState(event?.date ?? defaultDate);
+  const [date, setDate] = useState(event?.spanStart ?? event?.date ?? defaultDate);
+  const [multiDay, setMultiDay] = useState(Boolean(event?.endDate));
+  const [endDate, setEndDate] = useState(event?.endDate ?? "");
   const [startTime, setStartTime] = useState(event?.startTime ?? defaultStartTime ?? "");
   const [endTime, setEndTime] = useState(event?.endTime ?? "");
   const [location, setLocation] = useState(event?.location ?? "");
@@ -88,9 +90,15 @@ export function EventForm({
       return;
     }
 
+    if (multiDay && endDate && endDate < date) {
+      setError("La date de fin doit être après la date de début.");
+      return;
+    }
+
     onSave({
       title: title.trim(),
       date,
+      endDate: multiDay && endDate > date ? endDate : undefined,
       startTime: startTime || undefined,
       endTime: endTime || undefined,
       location: location.trim() || undefined,
@@ -144,15 +152,45 @@ export function EventForm({
             />
           </Field>
 
-          <Field label="Quel jour ?">
-            <input
-              type="date"
-              value={date}
-              onChange={(changeEvent) => setDate(changeEvent.target.value)}
-              className={inputClass}
-              required
-            />
-          </Field>
+          <div className="flex flex-col gap-2">
+            <div className={`grid gap-4 ${multiDay ? "sm:grid-cols-2" : ""}`}>
+              <Field label={multiDay ? "Du" : "Quel jour ?"}>
+                <input
+                  type="date"
+                  value={date}
+                  onChange={(changeEvent) => {
+                    setDate(changeEvent.target.value);
+                    if (endDate && endDate < changeEvent.target.value) setEndDate(changeEvent.target.value);
+                  }}
+                  className={inputClass}
+                  required
+                />
+              </Field>
+              {multiDay ? (
+                <Field label="Au (inclus)">
+                  <input
+                    type="date"
+                    value={endDate}
+                    min={date}
+                    onChange={(changeEvent) => setEndDate(changeEvent.target.value)}
+                    className={inputClass}
+                    required
+                  />
+                </Field>
+              ) : null}
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setMultiDay((current) => !current);
+                if (!endDate) setEndDate(date);
+              }}
+              aria-pressed={multiDay}
+              className="self-start text-sm font-medium text-coral hover:underline"
+            >
+              {multiDay ? "Sur une seule journée" : "Sur plusieurs jours (vacances, voyage…)"}
+            </button>
+          </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <TimeField label="De (optionnel)">

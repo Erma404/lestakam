@@ -238,3 +238,23 @@ describe("expandEvents sur plusieurs jours", () => {
     ]);
   });
 });
+
+describe("expandEvents sur une période", () => {
+  it("affiche un voyage chaque jour, du premier au dernier inclus", () => {
+    const voyage: CalendarEvent = {
+      id: "voyage",
+      title: "Voyage au Cameroun",
+      date: "2026-10-13",
+      endDate: "2026-10-20",
+      startTime: "09:00",
+      category: "famille",
+      memberIds: ["stephane"],
+    };
+    const days = ["2026-10-12", "2026-10-13", "2026-10-14", "2026-10-20", "2026-10-21"];
+    const expanded = expandEvents([voyage], days);
+    expect(expanded.map((event) => event.date)).toEqual(["2026-10-13", "2026-10-14", "2026-10-20"]);
+    expect(expanded[0].startTime).toBe("09:00");
+    expect(expanded[1].startTime).toBeUndefined();
+    expect(expanded[1].spanStart).toBe("2026-10-13");
+  });
+});

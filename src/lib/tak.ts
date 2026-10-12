@@ -14,6 +14,7 @@ export const addEventSchema = z.object({
   action: z.literal("ajouter_evenement"),
   titre: z.string().min(1),
   date: z.string().describe("Date au format AAAA-MM-JJ"),
+  dateFin: z.string().optional(),
   heureDebut: z.string().optional().describe("Heure de début au format HH:MM"),
   heureFin: z.string().optional().describe("Heure de fin au format HH:MM"),
   lieu: z.string().optional(),
@@ -80,6 +81,10 @@ export const takModelActionSchema = z.object({
   // nullable (et donc valoir explicitement `null`), jamais simplement omis.
   titre: z.string().nullable().describe("Titre, pour un événement"),
   date: z.string().nullable().describe("Date au format AAAA-MM-JJ, pour un événement"),
+  dateFin: z
+    .string()
+    .nullable()
+    .describe("Dernier jour inclus AAAA-MM-JJ, pour un événement sur plusieurs jours (voyage, vacances)"),
   heureDebut: z.string().nullable().describe("Heure de début HH:MM, pour un événement"),
   heureFin: z.string().nullable().describe("Heure de fin HH:MM, pour un événement"),
   lieu: z.string().nullable().describe("Lieu, pour un événement"),
@@ -134,6 +139,7 @@ export function toTakAction(raw: TakModelAction): TakAction {
         action: "ajouter_evenement",
         titre: raw.titre,
         date: raw.date,
+        dateFin: raw.dateFin && raw.dateFin > raw.date ? raw.dateFin : undefined,
         heureDebut: raw.heureDebut || undefined,
         heureFin: raw.heureFin || undefined,
         lieu: raw.lieu || undefined,
@@ -211,7 +217,8 @@ export function describeTakAction(action: TakAction, rituals: TakRitual[] = []):
           ? ", chaque semaine hors vacances scolaires"
           : ", chaque semaine"
         : "";
-      return `Ajouter « ${action.titre} » le ${action.date}${heure}${repetition}, pour ${joinNames(action.personnes)}.`;
+      const quand = action.dateFin ? `du ${action.date} au ${action.dateFin}` : `le ${action.date}`;
+      return `Ajouter « ${action.titre} » ${quand}${heure}${repetition}, pour ${joinNames(action.personnes)}.`;
     }
     case "ajouter_article":
       return `Ajouter « ${action.label} »${action.quantite ? ` (${action.quantite})` : ""} à la liste de courses.`;

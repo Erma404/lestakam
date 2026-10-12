@@ -245,6 +245,7 @@ export function TakWidget() {
         addEvent({
           title: action.titre,
           date: action.date,
+          endDate: action.dateFin,
           startTime: action.heureDebut,
           endTime: action.heureFin,
           location: action.lieu,

@@ -13,7 +13,23 @@ export function expandEvents(events: CalendarEvent[], windowDays: string[]): Cal
 
   for (const event of events) {
     if (!event.repeatsWeekly) {
-      if (windowDays.includes(event.date)) expanded.push(event);
+      if (event.endDate && event.endDate > event.date) {
+        // Sur plusieurs jours : une occurrence par jour de la période. L'heure
+        // de début ne vaut que le premier jour, celle de fin que le dernier.
+        for (const day of windowDays) {
+          if (day < event.date || day > event.endDate) continue;
+          expanded.push({
+            ...event,
+            id: `${event.id}@${day}`,
+            date: day,
+            spanStart: event.date,
+            startTime: day === event.date ? event.startTime : undefined,
+            endTime: day === event.endDate ? event.endTime : undefined,
+          });
+        }
+      } else if (windowDays.includes(event.date)) {
+        expanded.push(event);
+      }
       continue;
     }
 

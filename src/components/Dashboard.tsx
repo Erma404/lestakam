@@ -450,6 +450,17 @@ function repeatLabel(event: CalendarEvent): string {
   return event.skipSchoolHolidays ? `${label}, hors vacances` : label;
 }
 
+/** « du 13 au 20 oct. » pour un événement sur plusieurs jours. */
+function spanLabel(event: CalendarEvent): string {
+  const start = event.spanStart ?? event.date;
+  const format = (key: string, withMonth: boolean) =>
+    new Intl.DateTimeFormat("fr-FR", withMonth ? { day: "numeric", month: "short" } : { day: "numeric" }).format(
+      new Date(`${key}T12:00:00`),
+    );
+  const sameMonth = start.slice(0, 7) === event.endDate?.slice(0, 7);
+  return `du ${format(start, !sameMonth)} au ${format(event.endDate ?? start, true)}`;
+}
+
 function EventRow({ event, onEdit }: { event: CalendarEvent; onEdit: () => void }) {
   const accent = accentClasses(CATEGORY_ACCENT[event.category]);
   const people = event.memberIds
@@ -474,6 +485,7 @@ function EventRow({ event, onEdit }: { event: CalendarEvent; onEdit: () => void 
             {CATEGORY_LABEL[event.category]}
             {event.location ? ` · ${event.location}` : ""}
             {event.repeatsWeekly ? ` · ${repeatLabel(event)}` : ""}
+            {event.endDate ? ` · ${spanLabel(event)}` : ""}
           </p>
         </div>
         <div className="flex -space-x-2">
