@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useId, useState } from "react";
+import { useCallback, useEffect, useId, useState } from "react";
+import { useStoredState } from "./localStore";
 import { useHouseholdShared } from "./supabase/household";
 import { getSupabaseClient } from "./supabase/client";
 import { RITUALS as LOCAL_RITUALS } from "./family";
@@ -9,6 +10,29 @@ import type { Ritual } from "./types";
 import type { RitualRow } from "./supabase/database.types";
 
 const LOCAL_KHLOE_RITUALS = LOCAL_RITUALS.filter((ritual) => ritual.memberId === "khloe");
+
+/** Rituels modifiés depuis les réglages, en mode local (base non connectée). */
+const LOCAL_STORAGE_KEY = "rituels:liste";
+
+export type NewRitual = Omit<Ritual, "id" | "memberId">;
+
+function newId(): string {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) return crypto.randomUUID();
+  return `rituel-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+/** Colonnes de la table `rituals` correspondant aux champs modifiables. */
+function toRow(ritual: NewRitual) {
+  return {
+    label: ritual.label,
+    emoji: ritual.emoji,
+    moment: ritual.moment,
+    scheduled_time: ritual.time ?? null,
+    stars: ritual.stars,
+    needs_parent_approval: ritual.needsParentApproval,
+    days: ritual.days?.length ? ritual.days : null,
+  };
+}
 
 function rowToRitual(row: RitualRow): Ritual {
   return {
@@ -83,9 +107,81 @@ export function useRituals(today: string) {
     };
   }, [shared, khloe, instanceId]);
 
-  const allRituals = shared ? (rows ? rows.map(rowToRitual) : []) : LOCAL_KHLOE_RITUALS;
+  const [localStored, setLocalStored] = useStoredState<Ritual[] | null>(LOCAL_STORAGE_KEY, null);
+  const localRituals = localStored ?? LOCAL_KHLOE_RITUALS;
+
+  const allRituals = shared ? (rows ? rows.map(rowToRitual) : []) : localRituals;
   const weekday = weekdayNumber(today);
   const rituals = allRituals.filter((ritual) => appliesOn(ritual, weekday));
 
-  return { rituals, shared: shared && rows !== null };
+  const addRitual = useCallback(
+    (ritual: NewRitual) => {
+      if (shared && khloe) {
+        const supabase = getSupabaseClient();
+        if (!supabase) return;
+        const nextOrder = (rows ?? []).reduce((max, row) => Math.max(max, row.sort_order), 0) + 1;
+        supabase
+          .from("rituals")
+          .insert({ household_id: khloe.household_id, member_id: khloe.id, ...toRow(ritual), sort_order: nextOrder })
+          .then(({ error }) => {
+            if (error) console.error("Ajout du rituel impossible :", error);
+          });
+        return;
+      }
+      setLocalStored([...localRituals, { ...ritual, id: newId(), memberId: "khloe" }]);
+    },
+    [shared, khloe, rows, localRituals, setLocalStored],
+  );
+
+  const updateRitual = useCallback(
+    (id: string, ritual: NewRitual) => {
+      if (shared) {
+        const supabase = getSupabaseClient();
+        if (!supabase) return;
+        supabase
+          .from("rituals")
+          .update(toRow(ritual))
+          .eq("id", id)
+          .then(({ error }) => {
+            if (error) console.error("Modification du rituel impossible :", error);
+          });
+        return;
+      }
+      setLocalStored(localRituals.map((item) => (item.id === id ? { ...item, ...ritual } : item)));
+    },
+    [shared, localRituals, setLocalStored],
+  );
+
+  /**
+   * Retire un rituel de la journée de Khloé. En base, il est désactivé plutôt
+   * qu'effacé : les étoiles déjà gagnées avec lui restent comptées.
+   */
+  const removeRitual = useCallback(
+    (id: string) => {
+      if (shared) {
+        const supabase = getSupabaseClient();
+        if (!supabase) return;
+        supabase
+          .from("rituals")
+          .update({ active: false })
+          .eq("id", id)
+          .then(({ error }) => {
+            if (error) console.error("Retrait du rituel impossible :", error);
+          });
+        return;
+      }
+      setLocalStored(localRituals.filter((item) => item.id !== id));
+    },
+    [shared, localRituals, setLocalStored],
+  );
+
+  return {
+    rituals,
+    /** Tous les rituels, quel que soit le jour — pour les réglages. */
+    allRituals,
+    addRitual,
+    updateRitual,
+    removeRitual,
+    shared: shared && rows !== null,
+  };
 }

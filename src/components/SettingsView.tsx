@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Avatar } from "./Avatar";
 import { Card, CardTitle } from "./Card";
+import { RitualsSettings } from "./RitualsSettings";
 import { MEMBERS } from "@/lib/family";
 import { useSession } from "@/lib/supabase/session";
 import { useEvents } from "@/lib/useEvents";
@@ -81,6 +82,8 @@ export function SettingsView() {
           </p>
         )}
       </Card>
+
+      <RitualsSettings />
 
       <Card>
         <CardTitle eyebrow="Le foyer" title="Membres de la famille" />

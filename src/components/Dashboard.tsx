@@ -7,6 +7,7 @@ import { Avatar } from "./Avatar";
 import { Card, CardLink, CardTitle } from "./Card";
 import { Icon } from "./Icon";
 import { KhloeScore } from "./KhloeScore";
+import { SwipeToDelete } from "./SwipeToDelete";
 import { EventForm } from "./EventForm";
 import { ReminderForm } from "./ReminderForm";
 import { MEMBERS, memberById } from "@/lib/family";
@@ -140,6 +141,10 @@ export function Dashboard({ initialIso }: DashboardProps) {
             onAdd={() => setCreatingReminder(true)}
             onEdit={setEditingReminder}
             onToggleDone={toggleDone}
+            onDelete={(reminder) => {
+              deleteReminder(reminder.id);
+              confirm({ kind: "deleted", title: "Rappel supprimé", detail: reminder.label });
+            }}
           />
           <ShoppingSection items={shoppingItems} onToggle={toggleShoppingItem} />
         </div>
@@ -529,12 +534,14 @@ function RemindersSection({
   onAdd,
   onEdit,
   onToggleDone,
+  onDelete,
 }: {
   reminders: Reminder[];
   today: string;
   onAdd: () => void;
   onEdit: (reminder: Reminder) => void;
   onToggleDone: (id: string) => void;
+  onDelete: (reminder: Reminder) => void;
 }) {
   return (
     <Card>
@@ -561,7 +568,12 @@ function RemindersSection({
               .map((id) => memberById(id))
               .filter((member): member is NonNullable<typeof member> => Boolean(member));
             return (
-              <li key={reminder.id} className="flex items-center gap-2 py-1.5">
+              <li key={reminder.id}>
+                <SwipeToDelete
+                  onDelete={() => onDelete(reminder)}
+                  label={`${reminder.label} — glisser vers la gauche pour supprimer`}
+                >
+                <div className="flex items-center gap-2 py-1.5">
                 <RoundCheck
                   checked={reminder.done}
                   onToggle={() => onToggleDone(reminder.id)}
@@ -584,6 +596,8 @@ function RemindersSection({
                     <Avatar key={member.id} member={member} size="sm" />
                   ))}
                 </div>
+                </div>
+                </SwipeToDelete>
               </li>
             );
           })}
