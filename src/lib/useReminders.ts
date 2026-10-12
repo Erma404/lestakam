@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useMemo } from "react";
-import { useStoredState } from "./localStore";
+import { useCallback } from "react";
+import { useSharedList } from "./useSharedList";
 import { demoReminders } from "./family";
 import { todayKey } from "./dates";
 import type { Reminder } from "./types";
@@ -15,19 +15,23 @@ function newId(): string {
   return `rappel-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
+const demo = () => demoReminders(todayKey());
+
 export type NewReminder = Omit<Reminder, "id" | "done"> & { done?: boolean };
 
 /**
  * Les rappels de la semaine, affichés sur le tableau de bord.
  *
- * Même principe que le calendrier et les repas : mémorisés sur l'appareil
- * tant que la base partagée n'est pas connectée.
+ * Même principe que le calendrier : partagés entre les appareils une fois
+ * la base connectée, mémorisés sur l'appareil sinon.
  */
 export function useReminders() {
-  const [stored, setStored] = useStoredState<Reminder[] | null>(STORAGE_KEY, null);
-
-  const reminders = useMemo(() => stored ?? demoReminders(todayKey()), [stored]);
-  const currentList = useCallback(() => stored ?? demoReminders(todayKey()), [stored]);
+  const { items: reminders, setItems: setStored, resetToDemo, shared } = useSharedList<Reminder>(
+    "rappel",
+    STORAGE_KEY,
+    demo,
+  );
+  const currentList = useCallback(() => reminders, [reminders]);
 
   const addReminder = useCallback(
     (reminder: NewReminder): Reminder => {
@@ -65,7 +69,5 @@ export function useReminders() {
     [currentList, setStored],
   );
 
-  const resetToDemo = useCallback(() => setStored(null), [setStored]);
-
-  return { reminders, addReminder, updateReminder, toggleDone, deleteReminder, resetToDemo };
+  return { reminders, addReminder, updateReminder, toggleDone, deleteReminder, resetToDemo, shared };
 }

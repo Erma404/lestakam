@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useMemo } from "react";
-import { useStoredState } from "./localStore";
+import { useCallback } from "react";
+import { useSharedList } from "./useSharedList";
 import { demoShoppingList } from "./family";
 import type { ShoppingItem } from "./types";
 
@@ -19,14 +19,16 @@ export type NewShoppingItem = Omit<ShoppingItem, "id" | "checked"> & { checked?:
 /**
  * La liste de courses partagée.
  *
- * Même principe que le calendrier et les repas : mémorisée sur l'appareil
- * tant que la base partagée n'est pas connectée.
+ * Même principe que le calendrier : partagée entre les appareils une fois
+ * la base connectée, mémorisée sur l'appareil sinon.
  */
 export function useShoppingList() {
-  const [stored, setStored] = useStoredState<ShoppingItem[] | null>(STORAGE_KEY, null);
-
-  const items = useMemo(() => stored ?? demoShoppingList(), [stored]);
-  const currentList = useCallback(() => stored ?? demoShoppingList(), [stored]);
+  const { items, setItems: setStored, resetToDemo, shared } = useSharedList<ShoppingItem>(
+    "course",
+    STORAGE_KEY,
+    demoShoppingList,
+  );
+  const currentList = useCallback(() => items, [items]);
 
   const addItem = useCallback(
     (item: NewShoppingItem): ShoppingItem => {
@@ -80,7 +82,5 @@ export function useShoppingList() {
     setStored(currentList().filter((item) => !item.checked));
   }, [currentList, setStored]);
 
-  const resetToDemo = useCallback(() => setStored(null), [setStored]);
-
-  return { items, addItem, addItems, updateItem, toggleItem, deleteItem, clearChecked, resetToDemo };
+  return { items, addItem, addItems, updateItem, toggleItem, deleteItem, clearChecked, resetToDemo, shared };
 }

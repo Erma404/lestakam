@@ -33,8 +33,10 @@ export function SettingsView() {
   }
 
   const resets: { id: string; label: string; run: () => void }[] = [
-    { id: "calendrier", label: "Calendrier", run: events.resetToDemo },
-    { id: "courses", label: "Liste de courses", run: shopping.resetToDemo },
+    // Partagés entre les appareils, le calendrier et les courses ne se
+    // remettent plus à zéro d'ici : ce serait tout effacer pour le foyer.
+    ...(events.shared ? [] : [{ id: "calendrier", label: "Calendrier", run: events.resetToDemo }]),
+    ...(shopping.shared ? [] : [{ id: "courses", label: "Liste de courses", run: shopping.resetToDemo }]),
     // Une fois partagés (base connectée), les objectifs et le compteur
     // d'étoiles de Khloé ne se remettent plus à zéro depuis ce bouton :
     // ce serait effacer sa progression pour tout le foyer d'un coup.

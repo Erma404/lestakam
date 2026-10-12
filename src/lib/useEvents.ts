@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useMemo } from "react";
-import { useStoredState } from "./localStore";
+import { useSharedList } from "./useSharedList";
 import { demoEvents } from "./family";
 import { todayKey } from "./dates";
 import type { CalendarEvent } from "./types";
@@ -34,21 +34,22 @@ function migrate(events: CalendarEvent[]): CalendarEvent[] {
   );
 }
 
+const demo = () => demoEvents(todayKey());
+
 /**
- * Les événements du calendrier familial.
- *
- * Tant que la base de données partagée n'est pas connectée, ils sont mémorisés
- * sur l'appareil. Au premier usage, quelques exemples sont affichés pour que le
- * tableau de bord ne soit pas vide ; ils disparaissent dès la première
- * modification.
+ * Les événements du calendrier familial, partagés entre les appareils une
+ * fois la base connectée (mémorisés sur l'appareil sinon). Au premier usage,
+ * quelques exemples sont affichés pour que le tableau de bord ne soit pas vide.
  */
 export function useEvents() {
-  const [stored, setStored] = useStoredState<CalendarEvent[] | null>(STORAGE_KEY, null);
+  const { items, setItems: setStored, resetToDemo, shared } = useSharedList<CalendarEvent>(
+    "evenement",
+    STORAGE_KEY,
+    demo,
+  );
 
-  const events = useMemo(() => migrate(stored ?? demoEvents(todayKey())), [stored]);
-
-  /** Les exemples deviennent de vrais événements dès la première modification. */
-  const currentList = useCallback(() => migrate(stored ?? demoEvents(todayKey())), [stored]);
+  const events = useMemo(() => migrate(items), [items]);
+  const currentList = useCallback(() => events, [events]);
 
   const addEvent = useCallback(
     (event: NewEvent): CalendarEvent => {
@@ -75,8 +76,5 @@ export function useEvents() {
     [currentList, setStored],
   );
 
-  /** Remet les exemples de départ, depuis les réglages. */
-  const resetToDemo = useCallback(() => setStored(null), [setStored]);
-
-  return { events, addEvent, updateEvent, deleteEvent, resetToDemo };
+  return { events, addEvent, updateEvent, deleteEvent, resetToDemo, shared };
 }

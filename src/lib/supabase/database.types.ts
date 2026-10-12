@@ -94,6 +94,20 @@ export type HouseholdRow = {
   created_at: string;
 };
 
+export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
+
+/** Listes partagées rangées en JSON : calendrier, rappels, courses. */
+export type SharedItemKind = "evenement" | "rappel" | "course";
+
+export type SharedItemRow = {
+  household_id: string;
+  kind: SharedItemKind;
+  id: string;
+  data: Json;
+  created_at: string;
+  updated_at: string;
+};
+
 /** Décrit une table dont on lit, insère et met à jour les lignes. */
 type Table<Row, Insert = Partial<Row>, Update = Partial<Row>> = {
   Row: Row;
@@ -112,6 +126,7 @@ export type Database = {
       rituals: Table<RitualRow>;
       ritual_status: Table<RitualStatusRow>;
       reward_goals: Table<RewardGoalRow>;
+      shared_items: Table<SharedItemRow>;
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;
