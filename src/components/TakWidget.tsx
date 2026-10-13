@@ -12,6 +12,8 @@ import { useRewardGoals } from "@/lib/useRewardGoals";
 import { useWeather } from "@/lib/useWeather";
 import { currentTime, formatLongDate, todayKey } from "@/lib/dates";
 import { buildTakContext } from "@/lib/takContext";
+import { useStoredState } from "@/lib/localStore";
+import { speak, stopSpeaking, unlockVoice, voiceSupported } from "@/lib/takVoice";
 import type { TakAction, TakRitual, TakTurn } from "@/lib/tak";
 
 interface ProposedAction {
@@ -99,14 +101,29 @@ export function TakWidget() {
   const [draft, setDraft] = useState("");
   const [loading, setLoading] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  // Tak lit ses réponses à voix haute ; réglage propre à chaque appareil.
+  const [voiceOn, setVoiceOn] = useStoredState<boolean>("tak:voix", true);
+  const [canSpeak, setCanSpeak] = useState(false);
+  const [speaking, setSpeaking] = useState(false);
 
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => setSupported(getSpeechRecognition() !== null), 0);
+    const timer = window.setTimeout(() => {
+      setSupported(getSpeechRecognition() !== null);
+      setCanSpeak(voiceSupported());
+    }, 0);
     return () => window.clearTimeout(timer);
   }, []);
+
+  // Fermer Tak le fait taire.
+  useEffect(() => {
+    if (open) return;
+    stopSpeaking();
+    const timer = window.setTimeout(() => setSpeaking(false), 0);
+    return () => window.clearTimeout(timer);
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -145,6 +162,7 @@ export function TakWidget() {
         forecast,
       });
 
+      stopSpeaking();
       setMessages((current) => [...current, { id: newMessageId(), role: "user", text: trimmed }]);
       setDraft("");
       setLoading(true);
@@ -188,6 +206,10 @@ export function TakWidget() {
             recipe: data.recipe,
           },
         ]);
+        if (voiceOn) {
+          setSpeaking(true);
+          speak(reply, () => setSpeaking(false));
+        }
       } catch {
         setMessages((current) => [
           ...current,
@@ -202,7 +224,7 @@ export function TakWidget() {
         setLoading(false);
       }
     },
-    [loading, messages, rituals, statuses, today, events, shoppingItems, starEntries, goals, forecast],
+    [loading, messages, rituals, statuses, today, events, shoppingItems, starEntries, goals, forecast, voiceOn],
   );
 
   function toggleListening() {
@@ -214,6 +236,8 @@ export function TakWidget() {
       return;
     }
 
+    if (voiceOn) unlockVoice();
+    stopSpeaking();
     const recognition = new Recognition();
     recognition.lang = "fr-FR";
     recognition.continuous = false;
@@ -336,6 +360,27 @@ export function TakWidget() {
                 Pose-moi une question ou demande-moi un coup de main.
               </p>
             </div>
+            {canSpeak ? (
+              <button
+                type="button"
+                onClick={() => {
+                  if (voiceOn) {
+                    stopSpeaking();
+                    setSpeaking(false);
+                  } else {
+                    unlockVoice();
+                  }
+                  setVoiceOn(!voiceOn);
+                }}
+                aria-pressed={voiceOn}
+                aria-label={voiceOn ? "Couper la voix de Tak" : "Faire parler Tak"}
+                className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white hover:bg-white/25 ${
+                  speaking ? "animate-pulse bg-white/30" : "bg-white/15"
+                }`}
+              >
+                <Icon name={voiceOn ? "volume" : "volumeOff"} className="h-5 w-5" />
+              </button>
+            ) : null}
             {messages.length > 0 ? (
               <button
                 type="button"
@@ -449,6 +494,7 @@ export function TakWidget() {
           <form
             onSubmit={(formEvent) => {
               formEvent.preventDefault();
+              if (voiceOn) unlockVoice();
               void ask(draft);
             }}
             className="flex items-center gap-2 border-t border-line bg-surface p-3"
