@@ -13,9 +13,19 @@ const lexend = Lexend({
 });
 
 export const metadata: Metadata = {
+  // Adresse publique : l'image de partage (src/app/opengraph-image.jpg)
+  // doit être référencée par une URL complète dans les aperçus de lien.
+  metadataBase: new URL("https://lestakam.vercel.app"),
   title: "LesTakam",
   description: "Le tableau de bord de la famille : calendrier, rituels, courses et météo.",
   applicationName: "LesTakam",
+  openGraph: {
+    title: "LesTakam",
+    description: "Le tableau de bord de la famille : calendrier, rituels, courses et météo.",
+    siteName: "LesTakam",
+    locale: "fr_FR",
+    type: "website",
+  },
   appleWebApp: {
     capable: true,
     title: "LesTakam",
