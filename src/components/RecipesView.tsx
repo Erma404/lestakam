@@ -1,10 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { IngredientPicker } from "./IngredientPicker";
 import { RecipeCard, type Recipe } from "./RecipeCard";
 import { useSaveConfirmation } from "./SaveConfirmation";
 import { Icon } from "./Icon";
-import { useShoppingList } from "@/lib/useShoppingList";
+import { useShoppingList, type NewShoppingItem } from "@/lib/useShoppingList";
 import { useWeather } from "@/lib/useWeather";
 import { startOfWeek, todayKey } from "@/lib/dates";
 import { describeWeather } from "@/lib/weather";
@@ -157,11 +158,12 @@ export function RecipesView() {
     }
   }
 
-  function addIngredientsToList() {
+  function addIngredientsToList(items: NewShoppingItem[]) {
     if (!recipe) return;
-    addItems(recipe.ingredients.map((label) => ({ label })));
-    confirm({ title: "Ajouté à la liste",
-      detail: `${recipe.ingredients.length} ingrédients pour « ${recipe.plat} »`,
+    addItems(items);
+    confirm({
+      title: "Ajouté à la liste",
+      detail: `${items.length} article${items.length > 1 ? "s" : ""} pour « ${recipe.plat} »`,
     });
   }
 
@@ -278,14 +280,7 @@ export function RecipesView() {
         {recipe ? (
           <>
             <RecipeCard recipe={recipe} />
-            <button
-              type="button"
-              onClick={addIngredientsToList}
-              className="btn-pop btn-pop-coral inline-flex min-h-12 items-center justify-center gap-2 self-stretch px-6 text-base sm:self-start"
-            >
-              <Icon name="cart" className="h-5 w-5" />
-              Ajouter les ingrédients à la liste de courses
-            </button>
+            <IngredientPicker key={recipe.plat} ingredients={recipe.ingredients} onAdd={addIngredientsToList} />
           </>
         ) : null}
       </div>
