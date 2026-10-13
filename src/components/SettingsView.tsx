@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Avatar } from "./Avatar";
 import { Card, CardTitle } from "./Card";
+import { NotificationsSettings } from "./NotificationsSettings";
 import { RitualsSettings } from "./RitualsSettings";
 import { MEMBERS } from "@/lib/family";
 import { useSession } from "@/lib/supabase/session";
@@ -84,6 +85,8 @@ export function SettingsView() {
           </p>
         )}
       </Card>
+
+      <NotificationsSettings />
 
       <RitualsSettings />
 

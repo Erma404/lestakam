@@ -108,6 +108,15 @@ export type SharedItemRow = {
   updated_at: string;
 };
 
+export type PushSubscriptionRow = {
+  endpoint: string;
+  household_id: string;
+  member_id: string | null;
+  p256dh: string;
+  auth: string;
+  created_at: string;
+};
+
 /** Décrit une table dont on lit, insère et met à jour les lignes. */
 type Table<Row, Insert = Partial<Row>, Update = Partial<Row>> = {
   Row: Row;
@@ -127,6 +136,7 @@ export type Database = {
       ritual_status: Table<RitualStatusRow>;
       reward_goals: Table<RewardGoalRow>;
       shared_items: Table<SharedItemRow>;
+      push_subscriptions: Table<PushSubscriptionRow>;
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;
