@@ -121,8 +121,8 @@ export function Dashboard({ initialIso }: DashboardProps) {
         onSelect={setSelectedDate}
       />
 
-      <div className="grid items-start gap-5 lg:grid-cols-[1.55fr_1fr]">
-        <div className="flex flex-col gap-5">
+      <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)]">
+        <div className="flex min-w-0 flex-col gap-5">
           <DaySection
             date={activeDate}
             today={today}
@@ -246,7 +246,7 @@ function Hero({
         />
         <div className="min-w-0">
           <p className="text-base text-ink-soft">{greeting(clock)}</p>
-          <h1 className="font-display text-3xl font-medium leading-tight text-ink sm:text-4xl">
+          <h1 className="font-display text-2xl font-medium leading-tight text-ink sm:text-4xl">
             {capitalize(formatLongDate(today))} {year}
           </h1>
           <div className="mt-3 flex flex-wrap gap-2" role="group" aria-label="Filtrer le programme">
@@ -271,19 +271,19 @@ function Hero({
         </div>
       </div>
 
-      <div className="flex items-end gap-5 sm:gap-8">
+      <div className="flex min-w-0 items-center gap-4 sm:items-end sm:gap-8">
         <p
           data-testid="horloge"
-          className="font-display text-6xl font-medium leading-none tracking-tight text-ink tabular-nums sm:text-7xl"
+          className="font-display text-5xl font-medium leading-none tracking-tight text-ink tabular-nums sm:text-7xl"
         >
           {clock}
         </p>
         {forecast && look && todayWeather ? (
-          <div className="flex items-center gap-3 rounded-card bg-surface px-4 py-3">
-            <span className="text-4xl leading-none" aria-hidden>
+          <div className="flex min-w-0 flex-1 items-center gap-3 rounded-card bg-surface px-4 py-3 sm:flex-none">
+            <span className="text-3xl leading-none sm:text-4xl" aria-hidden>
               {look.emoji}
             </span>
-            <div>
+            <div className="min-w-0">
               <p className="text-2xl font-medium leading-tight text-ink">
                 {Math.round(forecast.now.temperature)}°
                 <span className="ml-1.5 text-sm text-ink-soft">{look.label}</span>

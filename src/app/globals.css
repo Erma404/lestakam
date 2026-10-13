@@ -36,6 +36,15 @@
 html,
 body {
   height: 100%;
+  /* Une app, pas une page : jamais de défilement de côté ni de dézoom
+     possible sur téléphone, même si un élément déborde. */
+  overflow-x: clip;
+}
+
+html {
+  /* iOS grossit parfois le texte tout seul (paysage, réglages) : taille fixe. */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 body {
