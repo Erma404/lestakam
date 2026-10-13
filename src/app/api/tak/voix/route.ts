@@ -4,8 +4,8 @@ import { speakableText } from "@/lib/takVoice";
 
 export const runtime = "nodejs";
 
-/** Voix choisie par Ernestine sur ElevenLabs (identifiant public, pas un secret). */
-const VOICE_ID = "5Qfm4RqcAer0xoyWtoHC";
+/** Voix de Tak choisie par Ernestine sur ElevenLabs (identifiant public, pas un secret). */
+const VOICE_ID = "0xHziZolI8Tp6rLtUqh2";
 const MODEL_ID = "eleven_multilingual_v2";
 /** Une réponse de Tak se lit en quelques phrases : au-delà, on coupe. */
 const MAX_LENGTH = 700;
