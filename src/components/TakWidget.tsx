@@ -13,6 +13,7 @@ import { useWeather } from "@/lib/useWeather";
 import { currentTime, formatLongDate, todayKey } from "@/lib/dates";
 import { buildTakContext } from "@/lib/takContext";
 import { useStoredState } from "@/lib/localStore";
+import { useSession } from "@/lib/supabase/session";
 import { speak, stopSpeaking, unlockVoice, voiceSupported } from "@/lib/takVoice";
 import type { TakAction, TakRitual, TakTurn } from "@/lib/tak";
 
@@ -95,6 +96,7 @@ export function TakWidget() {
   const { goals } = useRewardGoals();
   const { forecast } = useWeather();
 
+  const { session } = useSession();
   const [open, setOpen] = useState(false);
   const [supported, setSupported] = useState(true);
   const [listening, setListening] = useState(false);
@@ -208,7 +210,7 @@ export function TakWidget() {
         ]);
         if (voiceOn) {
           setSpeaking(true);
-          speak(reply, () => setSpeaking(false));
+          void speak(reply, () => setSpeaking(false), session?.access_token);
         }
       } catch {
         setMessages((current) => [
@@ -224,7 +226,7 @@ export function TakWidget() {
         setLoading(false);
       }
     },
-    [loading, messages, rituals, statuses, today, events, shoppingItems, starEntries, goals, forecast, voiceOn],
+    [loading, messages, rituals, statuses, today, events, shoppingItems, starEntries, goals, forecast, voiceOn, session],
   );
 
   function toggleListening() {
