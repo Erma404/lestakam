@@ -91,7 +91,7 @@ Manifest, icônes, service worker : requis pour les notifications sur iPhone et 
 
 ## 6. Contraintes
 
-- Langue et contenu en français, fuseau Europe/Paris, localisation Le Blanc-Mesnil.
+- Langue et contenu en français, fuseau Europe/Paris, météo calée sur la localisation du foyer.
 - Respect de la vie privée : données d'une enfant mineure, pas de tiers, pas de clé `service_role`.
 - Un seul modèle autorisé au palier gratuit d'AI Gateway (`openai/gpt-5.4-nano`).
 

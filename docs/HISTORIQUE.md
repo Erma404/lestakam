@@ -17,8 +17,8 @@ puis une pause de quatre semaines, puis 5 le 11/10, 6 le 12/10 et 7 le 13/10.
 
 ## Phase 1 — Fondation (11/09)
 
-- `0fac379` Création du tableau de bord : date et heure vivantes, météo Open-Meteo du
-  Blanc-Mesnil, semaine glissante sur 7 jours, photos filtrantes, rappels, tenues du jour
+- `0fac379` Création du tableau de bord : date et heure vivantes, météo Open-Meteo de la
+  localisation du foyer, semaine glissante sur 7 jours, photos filtrantes, rappels, tenues du jour
   selon le ressenti thermique, rituels de Khloé en matin / après-midi / soir.
 - `6e76b85` Calendrier complet : ajout, modification, suppression, répétition hebdomadaire,
   filtre par personne.

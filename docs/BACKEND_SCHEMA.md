@@ -17,8 +17,8 @@ auth.users 1---0..1 members   (parents seulement)
 ```
 
 ### households
-`id uuid pk`, `name`, `weather_location_name` (défaut Le Blanc-Mesnil), `weather_latitude`
-(48.9362), `weather_longitude` (2.4636), `created_at`.
+`id uuid pk`, `name`, `weather_location_name`, `weather_latitude`, `weather_longitude` (coordonnées
+de la météo, valeurs par défaut définies dans le SQL), `created_at`.
 
 ### members
 `id`, `household_id fk`, `user_id uuid unique fk auth.users (set null)`, `first_name`,
