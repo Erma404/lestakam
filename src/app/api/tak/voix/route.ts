@@ -4,8 +4,12 @@ import { speakableText } from "@/lib/takVoice";
 
 export const runtime = "nodejs";
 
-/** Voix de Tak choisie par Ernestine sur ElevenLabs (identifiant public, pas un secret). */
-const VOICE_ID = "0xHziZolI8Tp6rLtUqh2";
+/**
+ * Voix de Tak : « Sarah », voix de base d'ElevenLabs (utilisable par l'API avec
+ * un compte gratuit). Les voix de la bibliothèque, comme 0xHziZolI8Tp6rLtUqh2,
+ * exigent un compte payant. `ELEVENLABS_VOICE_ID` permet d'en changer sans code.
+ */
+const VOICE_ID = process.env.ELEVENLABS_VOICE_ID || "EXAVITQu4vr4xnSDxMaL";
 const MODEL_ID = "eleven_multilingual_v2";
 /** Une réponse de Tak se lit en quelques phrases : au-delà, on coupe. */
 const MAX_LENGTH = 700;

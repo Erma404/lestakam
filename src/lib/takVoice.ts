@@ -129,7 +129,8 @@ export async function speak(text: string, onEnd?: () => void, accessToken?: stri
     audio.onended = () => onEnd?.();
     audio.onerror = () => onEnd?.();
     await audio.play();
-  } catch {
+  } catch (error) {
+    console.warn("Voix de Tak : repli sur la voix de l'appareil", error);
     if (ticket !== generation) return;
     speakWithDevice(spoken, onEnd);
   }
